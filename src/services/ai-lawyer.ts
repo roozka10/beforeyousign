@@ -68,7 +68,7 @@ IMPORTANT:
 - overallScore, clarity, fairness must be numbers 0-100`;
 };
 
-const DEFAULT_MODEL = "openrouter/elephant-alpha";
+const DEFAULT_MODEL = "mistralai/mistral-7b-instruct:free";
 
 export async function analyzeContractWithAI(
   contractText: string,
@@ -116,8 +116,13 @@ Analyze this contract according to the rules provided. Respond ONLY with valid J
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`OpenRouter API error: ${error.error?.message || "Unknown error"}`);
+      try {
+        const error = await response.json();
+        console.error("API error response:", error);
+        throw new Error(`OpenRouter API error: ${error.error?.message || JSON.stringify(error)}`);
+      } catch (parseError) {
+        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+      }
     }
 
     const data = await response.json();
