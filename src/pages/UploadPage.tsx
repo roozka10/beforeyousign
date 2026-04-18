@@ -3,17 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOnboarding } from "@/lib/onboarding-context";
+import { analyzeContractWithContext } from "@/lib/contract-analysis-helper";
+import { saveContractResult } from "@/lib/supabase";
 
 const loadingMessages = [
   "Reading your contract…",
   "Looking for sketchy stuff…",
   "Scoring your deal…",
+  "Almost there…",
 ];
 
 const UploadPage = () => {
   const navigate = useNavigate();
+  const { data: onboardingData } = useOnboarding();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [msgIndex, setMsgIndex] = useState(0);
   const [dragOver, setDragOver] = useState(false);
 
@@ -21,15 +27,66 @@ const UploadPage = () => {
     if (!loading) return;
     const t = setInterval(() => {
       setMsgIndex((i) => Math.min(i + 1, loadingMessages.length - 1));
-    }, 900);
-    const done = setTimeout(() => navigate("/result/2"), 2800);
-    return () => {
-      clearInterval(t);
-      clearTimeout(done);
-    };
-  }, [loading, navigate]);
+    }, 1200);
+    return () => clearInterval(t);
+  }, [loading]);
 
-  const startUpload = () => setLoading(true);
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Read file content
+      const fileContent = await file.text();
+      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+
+      if (!apiKey) {
+        throw new Error("OpenRouter API key not configured");
+      }
+
+      // Analyze with AI
+      const analysis = await analyzeContractWithContext(
+        fileContent,
+        file.name,
+        onboardingData,
+        apiKey
+      );
+
+      // Save to Supabase
+      const savedResult = await saveContractResult({
+        fileName: file.name,
+        overallScore: analysis.overallScore,
+        clarity: analysis.clarity,
+        fairness: analysis.fairness,
+        riskLevel: analysis.riskLevel,
+        keyIssues: analysis.keyIssues,
+        simpleExplanation: analysis.simpleExplanation,
+        userLocation: onboardingData?.location || "United States",
+        documentType: onboardingData?.documentType,
+        mainConcern: onboardingData?.mainConcern,
+        contractText: fileContent,
+      });
+
+      // Navigate to result with the real UUID
+      navigate(`/result/${savedResult.id}`);
+    } catch (err) {
+      console.error("Failed to analyze contract:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to analyze contract. Please try again."
+      );
+      setLoading(false);
+    }
+  };
+
+  const startUpload = () => {
+    if (inputRef.current?.files?.[0]) {
+      handleFileUpload(inputRef.current.files[0]);
+    }
+  };
 
   return (
     <div className="min-h-screen grid place-items-center px-6 py-16">
@@ -45,6 +102,12 @@ const UploadPage = () => {
               </p>
             </div>
 
+            {error && (
+              <div className="bg-danger/10 border border-danger/30 rounded-2xl p-4 mb-8 text-danger text-sm">
+                {error}
+              </div>
+            )}
+
             <label
               onDragOver={(e) => {
                 e.preventDefault();
@@ -54,7 +117,8 @@ const UploadPage = () => {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(false);
-                startUpload();
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFileUpload(file);
               }}
               className={cn(
                 "block rounded-3xl border-2 border-dashed p-16 text-center cursor-pointer transition-smooth bg-card",
@@ -66,7 +130,7 @@ const UploadPage = () => {
               <input
                 ref={inputRef}
                 type="file"
-                accept=".pdf,.docx"
+                accept=".pdf,.docx,.txt"
                 className="hidden"
                 onChange={() => startUpload()}
               />
@@ -75,7 +139,7 @@ const UploadPage = () => {
               </div>
               <p className="text-xl font-semibold mb-2">Drag a file in</p>
               <p className="text-muted-foreground mb-8">
-                PDF or DOCX works — we'll handle the rest.
+                PDF, DOCX, or TXT works — we'll handle the rest.
               </p>
               <Button
                 type="button"
