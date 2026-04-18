@@ -68,9 +68,17 @@ const Login = () => {
           </Button>
 
           <p className="text-xs text-muted-foreground text-center mt-6">
-            By signing up, you agree to our <span className="underline">Terms of Service</span>.
+            By signing up, you agree to our{" "}
+            <a href="/terms" className="underline hover:text-foreground transition-colors">
+              Terms of Service
+            </a>
+            {" "}and{" "}
+            <a href="/privacy" className="underline hover:text-foreground transition-colors">
+              Privacy Policy
+            </a>
+            .
           </p>
-          <p className="text-xs text-muted-foreground text-center mt-2 underline cursor-pointer">
+          <p className="text-xs text-muted-foreground text-center mt-3 cursor-pointer hover:text-foreground transition-colors">
             Need help?
           </p>
         </div>
