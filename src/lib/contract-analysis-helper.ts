@@ -1,6 +1,8 @@
 import { analyzeContractWithAI, UserContext } from "@/services/ai-lawyer";
 import { OnboardingData } from "./onboarding-context";
 
+const DEFAULT_MODEL = "deepseek/deepseek-r1-distill:free";
+
 export async function analyzeContractWithContext(
   contractText: string,
   fileName: string,
@@ -24,6 +26,6 @@ export async function analyzeContractWithContext(
     fileName,
     apiKey,
     context,
-    import.meta.env.VITE_OPENROUTER_MODEL || "deepseek/deepseek-r1-distill:free"
+    DEFAULT_MODEL
   );
 }

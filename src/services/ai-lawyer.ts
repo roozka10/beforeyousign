@@ -63,47 +63,14 @@ You MUST respond in this exact JSON format (no markdown, pure JSON):
 }`;
 };
 
-SCORING GUIDELINES:
-- Overall Score: How safe is this contract for the person signing?
-  * 80-100: Pretty safe, standard terms
-  * 60-79: Some sketchy bits but manageable
-  * 40-59: Multiple red flags, risky
-  * 0-39: Avoid signing unless you have to
-
-- Clarity: Can a normal person understand what they're agreeing to?
-- Fairness: Does the contract favor one side way more than the other?
-
-KEY ISSUES should highlight:
-1. Auto-renewal clauses (are you locked in?)
-2. Payment terms (are they clear and fair?)
-3. Termination clauses (can you get out easily?)
-4. Liability limits (who's responsible if things go wrong?)
-5. Jurisdiction (which country's laws apply?)
-6. Hidden obligations (stuff buried in the fine print)
-
-TONE:
-- Friendly and conversational
-- Use simple words
-- Explain WHY something matters
-- Give real examples
-- Don't be fake - be honest about risks
-
-CONTRACT DATA FORMAT:
-You will receive:
-{
-  "content": "<full contract text>",
-  "fileName": "<name of file>",
-  "userLocation": "<country/state>"
-}
-
-Analyze based on the user's location and give advice that applies to their jurisdiction.`;
+const DEFAULT_MODEL = "deepseek/deepseek-r1-distill:free";
 
 export async function analyzeContractWithAI(
   contractText: string,
   fileName: string,
   openRouterApiKey: string,
   context?: UserContext,
-  model: string = "deepseek/deepseek-r1-distill:free"
+  model: string = DEFAULT_MODEL
 ): Promise<ContractAnalysis> {
   if (!openRouterApiKey) {
     throw new Error("OpenRouter API key not configured. Add VITE_OPENROUTER_API_KEY to your environment.");
