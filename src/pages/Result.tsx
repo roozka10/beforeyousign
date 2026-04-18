@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, PenLine, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ContractAnalysis } from "@/services/ai-lawyer";
 import { useOnboarding } from "@/lib/onboarding-context";
@@ -17,66 +17,54 @@ const Result = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Log onboarding context (dev only - secure)
+  // Load result from Supabase
   useEffect(() => {
-    if (process.env.NODE_ENV === "development" && onboardingData) {
-      console.log("User location:", onboardingData.location);
-    }
-  }, [onboardingData]);
-
-  // Load result from Supabase if ID is provided
-  useEffect(() => {
-    if (id) {
-      loadResult(id);
-    } else {
+    if (!id) {
+      setError("No contract ID provided");
       setLoading(false);
+      return;
     }
+
+    loadResult(id);
   }, [id]);
 
   const loadResult = async (resultId: string) => {
     try {
+      setLoading(true);
+      setError(null);
       const result = await getContractResult(resultId);
-      if (result) {
-        setStoredResult(result);
-        setAnalysis({
-          overallScore: result.overallScore,
-          clarity: result.clarity,
-          fairness: result.fairness,
-          riskLevel: result.riskLevel,
-          keyIssues: result.keyIssues,
-          simpleExplanation: result.simpleExplanation,
-        });
-      } else {
-        setError("Contract result not found");
+
+      if (!result) {
+        setError("Contract not found");
+        setLoading(false);
+        return;
       }
+
+      setStoredResult(result);
+      setAnalysis({
+        overallScore: result.overallScore,
+        clarity: result.clarity,
+        fairness: result.fairness,
+        riskLevel: result.riskLevel,
+        keyIssues: result.keyIssues,
+        simpleExplanation: result.simpleExplanation,
+      });
     } catch (err) {
       console.error("Failed to load result:", err);
-      setError("Failed to load contract result");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load contract result. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const fileName = storedResult?.fileName || "Contract.pdf";
-  const mockAnalysis: ContractAnalysis = {
-    overallScore: 38,
-    clarity: 80,
-    fairness: 45,
-    riskLevel: "high",
-    keyIssues: [
-      "Auto-renews silently unless you catch a 30-day window",
-      "Payment terms not clearly defined",
-      "You're locked in for 12 months with hard exit terms"
-    ],
-    simpleExplanation: `This contract is pretty risky. The biggest problem? They can automatically renew your agreement for another year without explicitly reminding you. You have to watch for a specific 30-day window to cancel, and if you miss it, you're locked in. The payment terms are also vague - they say "industry standard" but don't actually define what that means. That's a red flag because later they might charge you whatever they want and claim it's "standard."`,
-  };
-
-  useEffect(() => {
-    setAnalysis(mockAnalysis);
-  }, []);
-
+  // Animate score when analysis loads
   useEffect(() => {
     if (!analysis) return;
+
     let raf: number;
     const start = performance.now();
     const duration = 1100;
@@ -116,46 +104,46 @@ const Result = () => {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center">
           <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading contract...</p>
+          <p className="text-muted-foreground">Loading contract analysis...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  // Error state
+  if (error || !analysis) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
           <h2 className="text-2xl font-semibold mb-3">Oops!</h2>
-          <p className="text-muted-foreground mb-8">{error}</p>
-          <Button onClick={() => navigate("/dashboard")} className="bg-primary hover:bg-primary/90">
-            Back to Dashboard
-          </Button>
+          <p className="text-muted-foreground mb-8">{error || "No analysis available"}</p>
+          <div className="flex gap-3 flex-col sm:flex-row">
+            <Button
+              onClick={() => navigate("/dashboard")}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Back to Dashboard
+            </Button>
+            <Button
+              onClick={() => navigate("/upload")}
+              variant="outline"
+            >
+              Upload Another
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!analysis) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-semibold mb-3">No analysis available</h2>
-          <p className="text-muted-foreground mb-8">
-            Upload a contract to get started with our AI lawyer analysis.
-          </p>
-          <Button onClick={() => navigate("/upload")} className="bg-primary hover:bg-primary/90">
-            Upload Contract
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const fileName = storedResult?.fileName || "Contract.pdf";
 
   return (
     <div className="min-h-screen px-6 py-8 md:py-10">
@@ -163,7 +151,11 @@ const Result = () => {
         {/* Top header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <img src="/penguin-removebg-preview.png" alt="beforeyousign" className="w-9 h-9 object-contain" />
+            <img
+              src="/penguin-removebg-preview.png"
+              alt="beforeyousign"
+              className="w-9 h-9 object-contain"
+            />
             <span className="font-semibold text-lg tracking-tight">beforeyousign</span>
           </div>
           <span className="text-xs md:text-sm text-muted-foreground font-mono tracking-tight">
@@ -175,12 +167,7 @@ const Result = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           {/* Overall Score Card */}
           <div className="relative bg-card rounded-3xl border border-border p-6 overflow-hidden">
-            <div
-              className={cn(
-                "absolute -right-6 -top-6 w-40 h-40 rounded-full blur-3xl",
-                getRiskBg(analysis.riskLevel)
-              )}
-            />
+            <div className={cn("absolute -right-6 -top-6 w-40 h-40 rounded-full blur-3xl", getRiskBg(analysis.riskLevel))} />
             <div className="relative">
               <div className="w-10 h-10 rounded-xl bg-background border border-border grid place-items-center mb-6">
                 <FileText className="w-5 h-5 text-muted-foreground" />
@@ -232,17 +219,12 @@ const Result = () => {
         {/* Key Issues Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
           {analysis.keyIssues.map((issue, idx) => (
-            <div
-              key={idx}
-              className="bg-card rounded-3xl border border-border p-6 md:p-8"
-            >
+            <div key={idx} className="bg-card rounded-3xl border border-border p-6 md:p-8">
               <div className="flex items-center gap-2 mb-4">
                 <span className="w-6 h-6 rounded-full bg-danger/20 flex items-center justify-center text-danger text-xs font-bold">
                   {idx + 1}
                 </span>
-                <span className="text-xs uppercase tracking-widest text-danger font-medium">
-                  Important
-                </span>
+                <span className="text-xs uppercase tracking-widest text-danger font-medium">Important</span>
               </div>
               <p className="text-base font-medium leading-relaxed">{issue}</p>
             </div>

@@ -116,15 +116,49 @@ Analyze this contract according to the rules provided. Respond ONLY with valid J
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      console.error("Empty response from AI:", data);
+      throw new Error("AI returned empty response. Please try again.");
+    }
 
     // Parse the JSON response
     try {
-      const analysis = JSON.parse(content) as ContractAnalysis;
+      // Try to extract JSON from response (in case AI added extra text)
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+
+      const analysis = JSON.parse(jsonStr) as ContractAnalysis;
+
+      // Validate required fields
+      if (
+        typeof analysis.overallScore !== "number" ||
+        typeof analysis.clarity !== "number" ||
+        typeof analysis.fairness !== "number" ||
+        !analysis.riskLevel ||
+        !Array.isArray(analysis.keyIssues) ||
+        !analysis.simpleExplanation
+      ) {
+        throw new Error("AI response missing required fields");
+      }
+
+      // Clamp scores to 0-100
+      analysis.overallScore = Math.max(0, Math.min(100, analysis.overallScore));
+      analysis.clarity = Math.max(0, Math.min(100, analysis.clarity));
+      analysis.fairness = Math.max(0, Math.min(100, analysis.fairness));
+
+      // Ensure at least 3 key issues
+      while (analysis.keyIssues.length < 3) {
+        analysis.keyIssues.push("Review the contract carefully");
+      }
+      analysis.keyIssues = analysis.keyIssues.slice(0, 3);
+
       return analysis;
     } catch (e) {
       console.error("Raw response:", content);
-      throw new Error("Failed to parse AI response. Invalid JSON returned.");
+      console.error("Parse error:", e);
+      throw new Error(`Failed to parse AI response: ${e instanceof Error ? e.message : "Invalid format"}`);
     }
   } catch (error) {
     if (error instanceof Error) {
