@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { analyzeContractWithContext } from "@/lib/contract-analysis-helper";
 import { saveContractResult } from "@/lib/supabase";
+import { extractTextFromFile } from "@/lib/pdf-extractor";
 
 const loadingMessages = [
   "Reading your contract…",
@@ -38,13 +39,29 @@ const UploadPage = () => {
     setError(null);
 
     try {
-      // Read file content
-      const fileContent = await file.text();
       const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
       if (!apiKey) {
         throw new Error("OpenRouter API key not configured");
       }
+
+      // Extract text from file (handles PDF, DOCX, TXT)
+      const fileContent = await extractTextFromFile(file);
+
+      // Validate extraction
+      if (!fileContent || fileContent.trim().length === 0) {
+        throw new Error(
+          "Could not extract text from this file. Please ensure the PDF contains readable text or try a different file format."
+        );
+      }
+
+      if (fileContent.length < 100) {
+        console.warn(
+          `⚠️ Warning: Extracted text is very short (${fileContent.length} chars). This might be a scan or image-based PDF.`
+        );
+      }
+
+      console.log(`✅ Extracted ${fileContent.length} characters from ${file.name}`);
 
       // Analyze with AI
       const analysis = await analyzeContractWithContext(
