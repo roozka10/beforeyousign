@@ -9,7 +9,6 @@ import Onboarding from "./pages/Onboarding.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import UploadPage from "./pages/UploadPage.tsx";
 import Result from "./pages/Result.tsx";
-import History from "./pages/History.tsx";
 import Login from "./pages/Login.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import { AppLayout } from "./components/AppLayout.tsx";
@@ -33,7 +32,6 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/result/:id" element={<Result />} />
-              <Route path="/history" element={<History />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
