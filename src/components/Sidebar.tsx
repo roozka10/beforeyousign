@@ -1,0 +1,49 @@
+import { NavLink, useLocation } from "react-router-dom";
+import { LayoutDashboard, Upload, History } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const items = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/upload", label: "Upload", icon: Upload },
+  { to: "/history", label: "History", icon: History },
+];
+
+export const Sidebar = () => {
+  const location = useLocation();
+  return (
+    <aside className="w-64 shrink-0 border-r border-border bg-sidebar flex flex-col p-5">
+      <div className="flex items-center gap-2 px-2 mb-10">
+        <img src="/penguin-removebg-preview.png" alt="beforeyousign" className="w-9 h-9 object-contain" />
+        <span className="font-semibold text-lg tracking-tight">beforeyousign</span>
+      </div>
+
+      <nav className="flex flex-col gap-1">
+        {items.map(({ to, label, icon: Icon }) => {
+          const active =
+            location.pathname === to ||
+            (to === "/dashboard" && location.pathname === "/");
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-smooth",
+                active
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      <div className="mt-auto p-4 rounded-2xl bg-card border border-border">
+        <p className="text-xs text-muted-foreground mb-1">Pro tip</p>
+        <p className="text-sm leading-relaxed">Always read what you sign. Or… just let us do it.</p>
+      </div>
+    </aside>
+  );
+};

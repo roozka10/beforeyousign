@@ -1,0 +1,117 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { UploadCloud, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const loadingMessages = [
+  "Reading your contract…",
+  "Looking for sketchy stuff…",
+  "Scoring your deal…",
+];
+
+const UploadPage = () => {
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+
+  useEffect(() => {
+    if (!loading) return;
+    const t = setInterval(() => {
+      setMsgIndex((i) => Math.min(i + 1, loadingMessages.length - 1));
+    }, 900);
+    const done = setTimeout(() => navigate("/result/2"), 2800);
+    return () => {
+      clearInterval(t);
+      clearTimeout(done);
+    };
+  }, [loading, navigate]);
+
+  const startUpload = () => setLoading(true);
+
+  return (
+    <div className="min-h-screen grid place-items-center px-6 py-16">
+      <div className="w-full max-w-2xl animate-fade-up">
+        {!loading ? (
+          <>
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-semibold tracking-tight mb-4">
+                Drop your contract here
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                Let's see what's actually going on in there.
+              </p>
+            </div>
+
+            <label
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                startUpload();
+              }}
+              className={cn(
+                "block rounded-3xl border-2 border-dashed p-16 text-center cursor-pointer transition-smooth bg-card",
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/40 hover:bg-card/80"
+              )}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.docx"
+                className="hidden"
+                onChange={() => startUpload()}
+              />
+              <div className="w-16 h-16 rounded-2xl bg-background grid place-items-center mx-auto mb-6">
+                <UploadCloud className="w-8 h-8 text-primary" />
+              </div>
+              <p className="text-xl font-semibold mb-2">Drag a file in</p>
+              <p className="text-muted-foreground mb-8">
+                PDF or DOCX works — we'll handle the rest.
+              </p>
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  inputRef.current?.click();
+                }}
+                size="lg"
+                className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+              >
+                Pick a file
+              </Button>
+            </label>
+          </>
+        ) : (
+          <div className="bg-card rounded-3xl p-16 border border-border shadow-elevated text-center animate-scale-in">
+            <div className="relative w-20 h-20 mx-auto mb-10">
+              <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping" />
+              <div className="relative w-20 h-20 rounded-2xl bg-primary grid place-items-center shadow-glow">
+                <FileText className="w-9 h-9 text-primary-foreground" />
+              </div>
+            </div>
+            <p
+              key={msgIndex}
+              className="text-3xl font-medium animate-fade-in tracking-tight"
+            >
+              {loadingMessages[msgIndex]}
+            </p>
+            <p className="text-muted-foreground mt-4 text-lg">
+              Hang tight, almost done.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default UploadPage;
