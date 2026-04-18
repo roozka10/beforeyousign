@@ -32,35 +32,40 @@ const getAILawyerPrompt = (context?: UserContext): string => {
     }
   }
 
-  return `You are an expert AI lawyer assistant. Your job is to analyze contracts in a fun, easy-to-understand way for non-lawyers.
+  return `You are an expert AI lawyer. Analyze this contract in a friendly, simple way.
 
-USER CONTEXT:
-- Location: ${locationContext}
-- Document Type: ${documentContext}
-${context?.mainConcern ? `- Main Concern: ${context.mainConcern}` : ""}
+LOCATION: ${locationContext}
+DOCUMENT: ${documentContext}
 
-IMPORTANT RULES:
-1. Always give honest, real ratings (0-100)
-2. Focus ONLY on the most important things that could hurt the person
-3. Explain everything like you're talking to a friend, not a lawyer
-4. Keep explanations SHORT and fun
-5. Give specific examples from the contract
-6. Apply laws and regulations relevant to ${locationContext}
-7. Be direct about real risks - don't sugarcoat
-8. Reference their specific concerns if applicable
+INSTRUCTIONS:
+1. Give honest scores (0-100)
+2. Focus on real risks that could hurt this person
+3. Explain like talking to a friend
+4. Be SHORT and direct
+5. Give real examples
+6. Apply ${locationContext} laws
+7. Don't sugarcoat
 
-ANALYSIS FORMAT:
-You MUST respond in this exact JSON format (no markdown, pure JSON):
+YOU MUST RESPOND WITH ONLY VALID JSON. NO MARKDOWN, NO EXTRA TEXT.
+
+RESPOND EXACTLY LIKE THIS (VALID JSON ONLY):
 {
-  "overallScore": <number 0-100>,
-  "clarity": <number 0-100>,
-  "fairness": <number 0-100>,
-  "riskLevel": "<low|medium|high>",
-  "keyIssues": [
-    "<specific issue in 1-2 sentences, fun but serious>"
-  ],
-  "simpleExplanation": "<2-3 paragraph explanation of the contract's main points and biggest red flags in super simple terms>"
-}`;
+  "overallScore": 45,
+  "clarity": 60,
+  "fairness": 35,
+  "riskLevel": "high",
+  "keyIssues": ["First risk here", "Second risk here", "Third risk here"],
+  "simpleExplanation": "Start explaining the contract in simple terms. Mention the biggest problems. Keep it short and friendly. Use real examples from the contract."
+}
+
+IMPORTANT:
+- ONLY return JSON
+- No markdown
+- No explanation text before or after
+- All strings must use double quotes
+- riskLevel must be: low, medium, or high
+- keyIssues must be an array with 3 strings
+- overallScore, clarity, fairness must be numbers 0-100`;
 };
 
 const DEFAULT_MODEL = "openrouter/elephant-alpha";
@@ -125,10 +130,17 @@ Analyze this contract according to the rules provided. Respond ONLY with valid J
 
     // Parse the JSON response
     try {
-      // Try to extract JSON from response (in case AI added extra text)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      // Clean up the response - remove markdown code blocks if present
+      let cleanContent = content
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
 
+      // Try to extract JSON from response
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : cleanContent;
+
+      console.log("Attempting to parse JSON...");
       const analysis = JSON.parse(jsonStr) as ContractAnalysis;
 
       // Validate required fields
@@ -143,21 +155,42 @@ Analyze this contract according to the rules provided. Respond ONLY with valid J
         throw new Error("AI response missing required fields");
       }
 
-      // Clamp scores to 0-100
-      analysis.overallScore = Math.max(0, Math.min(100, analysis.overallScore));
-      analysis.clarity = Math.max(0, Math.min(100, analysis.clarity));
-      analysis.fairness = Math.max(0, Math.min(100, analysis.fairness));
-
-      // Ensure at least 3 key issues
-      while (analysis.keyIssues.length < 3) {
-        analysis.keyIssues.push("Review the contract carefully");
+      // Validate riskLevel
+      if (!["low", "medium", "high"].includes(analysis.riskLevel)) {
+        analysis.riskLevel = "medium";
       }
-      analysis.keyIssues = analysis.keyIssues.slice(0, 3);
 
+      // Clamp scores to 0-100
+      analysis.overallScore = Math.max(0, Math.min(100, Math.round(analysis.overallScore)));
+      analysis.clarity = Math.max(0, Math.min(100, Math.round(analysis.clarity)));
+      analysis.fairness = Math.max(0, Math.min(100, Math.round(analysis.fairness)));
+
+      // Ensure exactly 3 key issues
+      if (!Array.isArray(analysis.keyIssues)) {
+        analysis.keyIssues = [];
+      }
+      while (analysis.keyIssues.length < 3) {
+        analysis.keyIssues.push("Review the contract terms carefully");
+      }
+      analysis.keyIssues = analysis.keyIssues.slice(0, 3).map(issue =>
+        typeof issue === "string" ? issue : String(issue)
+      );
+
+      // Ensure explanation is a string
+      if (typeof analysis.simpleExplanation !== "string") {
+        analysis.simpleExplanation = "This contract needs careful review. Please consult with a legal professional.";
+      }
+
+      console.log("✅ Successfully parsed AI response");
       return analysis;
     } catch (e) {
       console.error("Raw response:", content);
       console.error("Parse error:", e);
+
+      // If parsing fails, return a safe default
+      if (e instanceof SyntaxError) {
+        throw new Error(`Invalid JSON response from AI. Please try again. Error: ${e.message}`);
+      }
       throw new Error(`Failed to parse AI response: ${e instanceof Error ? e.message : "Invalid format"}`);
     }
   } catch (error) {
