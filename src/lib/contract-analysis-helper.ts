@@ -1,7 +1,7 @@
 import { analyzeContractWithAI, UserContext } from "@/services/ai-lawyer";
 import { OnboardingData } from "./onboarding-context";
 
-const DEFAULT_MODEL = "deepseek/deepseek-r1-distill:free";
+const DEFAULT_MODEL = "openrouter/elephant-alpha";
 
 export async function analyzeContractWithContext(
   contractText: string,

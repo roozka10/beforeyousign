@@ -63,7 +63,7 @@ You MUST respond in this exact JSON format (no markdown, pure JSON):
 }`;
 };
 
-const DEFAULT_MODEL = "deepseek/deepseek-r1-distill:free";
+const DEFAULT_MODEL = "openrouter/elephant-alpha";
 
 export async function analyzeContractWithAI(
   contractText: string,
