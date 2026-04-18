@@ -1,29 +1,44 @@
 import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min?url";
 
 // Set worker path for pdfjs
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    console.log(`📄 Loading PDF: ${file.name} (${file.size} bytes)`);
+
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+
+    console.log(`📖 PDF loaded: ${pdf.numPages} pages`);
 
     let fullText = "";
 
     // Extract text from each page
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(" ");
-      fullText += pageText + "\n";
+      try {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => (typeof item.str === "string" ? item.str : ""))
+          .join(" ");
+        fullText += pageText + "\n";
+      } catch (pageError) {
+        console.warn(`⚠️ Could not extract page ${pageNum}, skipping...`);
+      }
     }
 
-    return fullText.trim();
+    const trimmedText = fullText.trim();
+    console.log(`✅ Extracted ${trimmedText.length} characters`);
+
+    return trimmedText;
   } catch (error) {
     console.error("PDF extraction error:", error);
-    throw new Error("Failed to extract text from PDF. The file may be corrupted or not a valid PDF.");
+    throw new Error(
+      "Failed to extract text from PDF. Please ensure: 1) It's a valid PDF, 2) It contains readable text (not just images), 3) It's not password protected."
+    );
   }
 }
 
