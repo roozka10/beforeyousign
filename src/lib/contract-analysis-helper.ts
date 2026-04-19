@@ -1,7 +1,7 @@
 import { analyzeContractWithAI, UserContext, ContractAnalysis } from "@/services/ai-lawyer";
 import { OnboardingData } from "./onboarding-context";
 
-const DEFAULT_MODEL = "mistralai/mistral-7b-instruct:free";
+const DEFAULT_MODEL = "google/gemma-2-27b-it:free";
 
 export async function analyzeContractWithContext(
   contractText: string,

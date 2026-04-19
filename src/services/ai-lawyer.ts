@@ -68,7 +68,9 @@ IMPORTANT:
 - overallScore, clarity, fairness must be numbers 0-100`;
 };
 
-const DEFAULT_MODEL = "mistralai/mistral-7b-instruct:free";
+const DEFAULT_MODEL = "google/gemma-2-27b-it:free";
+const FALLBACK_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
+const MODELS_TO_TRY = [DEFAULT_MODEL, FALLBACK_MODEL];
 
 export async function analyzeContractWithAI(
   contractText: string,
@@ -90,6 +92,32 @@ ${contractText}
 
 Analyze this contract according to the rules provided. Respond ONLY with valid JSON, no other text.
 `;
+
+  // Try primary model first, fall back to fallback if it fails
+  const modelsToTry = model === DEFAULT_MODEL ? MODELS_TO_TRY : [model];
+
+  for (const modelToUse of modelsToTry) {
+    try {
+      return await callOpenRouter(modelToUse, context, userMessage, openRouterApiKey);
+    } catch (error) {
+      console.warn(`Model ${modelToUse} failed, trying next...`, error);
+      // If this is the last model, throw the error
+      if (modelToUse === modelsToTry[modelsToTry.length - 1]) {
+        throw error;
+      }
+      // Otherwise, continue to next model
+    }
+  }
+
+  throw new Error("All models failed");
+}
+
+async function callOpenRouter(
+  model: string,
+  context: UserContext | undefined,
+  userMessage: string,
+  openRouterApiKey: string
+): Promise<ContractAnalysis> {
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
