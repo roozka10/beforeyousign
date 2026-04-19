@@ -29,10 +29,10 @@ const Terms = () => {
           <section className="bg-card rounded-2xl border border-border p-6 md:p-8">
             <h2 className="text-2xl font-semibold mb-4">🤖 What beforeyousign Actually Does</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              We use AI to read contracts and explain them in a fun, simple way. We're <span className="font-semibold text-foreground">NOT lawyers</span> and we <span className="font-semibold text-foreground">CANNOT give legal advice</span>.
+              We use AI to read contracts and explain them in a fun, simple way. We're <span className="font-semibold text-foreground">NOT real lawyers</span> and we <span className="font-semibold text-foreground">CAN'T give legal advice</span>.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              Think of us like a friendly translator who helps you understand what you're signing. We highlight sketchy stuff and explain it plainly — but we're not responsible for what you decide to do with that info.
+              We're like a friend who reads boring contracts and tells you the bad parts. We show you what could hurt you, but you gotta make your own choices.
             </p>
           </section>
 

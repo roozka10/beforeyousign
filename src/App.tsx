@@ -13,6 +13,7 @@ import Login from "./pages/Login.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
+import Settings from "./pages/Settings.tsx";
 import { AppLayout } from "./components/AppLayout.tsx";
 import { OnboardingProvider } from "./lib/onboarding-context";
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/result/:id" element={<Result />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

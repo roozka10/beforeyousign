@@ -135,6 +135,13 @@ const Onboarding = () => {
     } else {
       // Save all onboarding data before completing
       const location = country === "United States" ? `${usState}, USA` : country;
+      const profileData = {
+        location,
+        documentType: picks[2] || "",
+        mainConcern: picks[5] || "",
+      };
+      localStorage.setItem("bys_onboarding_complete", "true");
+      localStorage.setItem("bys_user_profile", JSON.stringify(profileData));
       saveOnboardingData({
         location,
         documentType: picks[2] || "",

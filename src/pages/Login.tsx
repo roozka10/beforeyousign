@@ -14,6 +14,11 @@ const GoogleIcon = () => (
 const Login = () => {
   const navigate = useNavigate();
 
+  const handleLogin = () => {
+    const isReturning = localStorage.getItem("bys_onboarding_complete") === "true";
+    navigate(isReturning ? "/dashboard" : "/onboarding");
+  };
+
   return (
     <div className="min-h-screen w-full bg-background grid grid-cols-1 lg:grid-cols-2 animate-fade-up">
       {/* Left: sign-in side */}
@@ -36,7 +41,7 @@ const Login = () => {
           <div className="relative mb-6">
             <Button
               variant="outline"
-              onClick={() => navigate("/dashboard")}
+              onClick={handleLogin}
               className="w-full h-12 bg-secondary hover:bg-accent border-border gap-3 text-base font-medium"
             >
               <GoogleIcon />
@@ -61,7 +66,7 @@ const Login = () => {
           />
 
           <Button
-            onClick={() => navigate("/dashboard")}
+            onClick={handleLogin}
             className="w-full h-12 bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground text-base font-medium shadow-glow transition-smooth"
           >
             Sign up with email
