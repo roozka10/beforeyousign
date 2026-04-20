@@ -1,15 +1,20 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Upload, History } from "lucide-react";
+import { LayoutDashboard, Upload, History, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Upload", icon: Upload },
   { to: "/history", label: "History", icon: History },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export const Sidebar = () => {
   const location = useLocation();
+
+  const rawProfile = localStorage.getItem("bys_user_profile");
+  const profile = rawProfile ? JSON.parse(rawProfile) : null;
+
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-sidebar flex flex-col p-5">
       <div className="flex items-center gap-2 px-2 mb-10">
@@ -41,8 +46,22 @@ export const Sidebar = () => {
       </nav>
 
       <div className="mt-auto p-4 rounded-2xl bg-card border border-border">
-        <p className="text-xs text-muted-foreground mb-1">Pro tip</p>
-        <p className="text-sm leading-relaxed">Always read what you sign. Or… just let us do it.</p>
+        {profile ? (
+          <>
+            <div className="w-8 h-8 rounded-full bg-primary/20 grid place-items-center mb-2">
+              <span className="text-primary text-sm font-semibold">
+                {profile.location?.charAt(0) ?? "?"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-0.5">Your location</p>
+            <p className="text-sm font-medium truncate">{profile.location}</p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-1">Pro tip</p>
+            <p className="text-sm leading-relaxed">Always read what you sign. Or… just let us do it.</p>
+          </>
+        )}
       </div>
     </aside>
   );
