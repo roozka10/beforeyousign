@@ -1,11 +1,10 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Upload, History, Settings } from "lucide-react";
+import { LayoutDashboard, Upload, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Upload", icon: Upload },
-  { to: "/history", label: "History", icon: History },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
