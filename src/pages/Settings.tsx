@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -43,12 +42,14 @@ const Settings = () => {
   const stored = rawProfile ? JSON.parse(rawProfile) : {};
   const parsed = parseLocation(stored.location ?? "");
 
-  const [displayName, setDisplayName] = useState<string>(stored.displayName ?? "");
   const [country, setCountry] = useState<string>(parsed.country);
   const [usState, setUsState] = useState<string>(parsed.usState);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaving(true);
+    
     const location =
       country === "United States" && usState
         ? `${usState}, USA`
@@ -56,11 +57,11 @@ const Settings = () => {
 
     const updatedProfile = {
       ...stored,
-      displayName,
       location,
     };
     localStorage.setItem("bys_user_profile", JSON.stringify(updatedProfile));
 
+    setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -94,16 +95,6 @@ const Settings = () => {
         <h2 className="text-base font-semibold mb-5">Profile</h2>
 
         <div className="grid gap-5">
-          <div>
-            <label className="block text-sm font-medium mb-2">Display name</label>
-            <Input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your name"
-              className="h-12 bg-background border-border"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium mb-2">Country</label>
             <Select
@@ -141,6 +132,7 @@ const Settings = () => {
 
       <Button
         onClick={handleSave}
+        disabled={saving}
         className={cn(
           "w-full h-12 rounded-2xl font-medium text-base shadow-glow transition-smooth mb-10",
           saved
@@ -152,6 +144,8 @@ const Settings = () => {
           <span className="flex items-center gap-2">
             <Check className="w-4 h-4" /> Saved
           </span>
+        ) : saving ? (
+          "Saving..."
         ) : (
           "Save changes"
         )}

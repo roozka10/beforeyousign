@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Upload, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -10,9 +11,19 @@ const items = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const [profile, setProfile] = useState<any>(null);
 
-  const rawProfile = localStorage.getItem("bys_user_profile");
-  const profile = rawProfile ? JSON.parse(rawProfile) : null;
+  useEffect(() => {
+    const updateProfile = () => {
+      const rawProfile = localStorage.getItem("bys_user_profile");
+      setProfile(rawProfile ? JSON.parse(rawProfile) : null);
+    };
+
+    updateProfile();
+    const interval = setInterval(updateProfile, 500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-sidebar flex flex-col p-5">
@@ -45,11 +56,11 @@ export const Sidebar = () => {
       </nav>
 
       <div className="mt-auto p-4 rounded-2xl bg-card border border-border">
-        {profile ? (
+        {profile?.location ? (
           <>
             <div className="w-8 h-8 rounded-full bg-primary/20 grid place-items-center mb-2">
               <span className="text-primary text-sm font-semibold">
-                {profile.location?.charAt(0) ?? "?"}
+                {profile.location.charAt(0)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mb-0.5">Your location</p>
