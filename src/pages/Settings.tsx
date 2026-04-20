@@ -10,18 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  FileText,
-  Briefcase,
-  Lock,
-  HelpCircle,
-  CircleDollarSign,
-  AlertTriangle,
-  Sparkles,
-  LogOut,
-  Trash2,
-  Check,
-} from "lucide-react";
+import { LogOut, Trash2, Check } from "lucide-react";
 
 const COUNTRIES = [
   "United States","United Kingdom","Canada","Australia","Germany","France",
@@ -39,60 +28,12 @@ const US_STATES = [
   "Wisconsin","Wyoming",
 ];
 
-type OptionItem = { id: string; label: string; icon: React.ComponentType<{ className?: string }> };
-
-const DOC_TYPE_OPTIONS: OptionItem[] = [
-  { id: "freelance", label: "Freelance contracts", icon: FileText },
-  { id: "job",       label: "Job offers",          icon: Briefcase },
-  { id: "nda",       label: "NDAs",                icon: Lock },
-  { id: "random",    label: "Random stuff I don't fully read", icon: HelpCircle },
-];
-
-const CONCERN_OPTIONS: OptionItem[] = [
-  { id: "stuck",  label: "Getting stuck in something", icon: Lock },
-  { id: "money",  label: "Losing money",               icon: CircleDollarSign },
-  { id: "hidden", label: "Hidden weird terms",         icon: AlertTriangle },
-  { id: "all",    label: "All of the above",           icon: Sparkles },
-];
-
 function parseLocation(location: string): { country: string; usState: string } {
   if (!location) return { country: "", usState: "" };
   if (location.endsWith(", USA")) {
     return { country: "United States", usState: location.replace(", USA", "") };
   }
   return { country: location, usState: "" };
-}
-
-function OptionCard({
-  opt, active, onSelect,
-}: {
-  opt: OptionItem;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  const Icon = opt.icon;
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "flex items-center gap-4 p-4 rounded-2xl border text-left transition-smooth",
-        active
-          ? "border-primary bg-primary/10"
-          : "border-border bg-background hover:border-muted-foreground/40 hover:bg-accent/40 hover:-translate-y-0.5"
-      )}
-    >
-      <div
-        className={cn(
-          "w-10 h-10 rounded-xl grid place-items-center transition-smooth shrink-0",
-          active ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-        )}
-      >
-        <Icon className="w-5 h-5" />
-      </div>
-      <span className="font-medium">{opt.label}</span>
-    </button>
-  );
 }
 
 const Settings = () => {
@@ -103,11 +44,9 @@ const Settings = () => {
   const parsed = parseLocation(stored.location ?? "");
 
   const [displayName, setDisplayName] = useState<string>(stored.displayName ?? "");
-  const [country, setCountry]         = useState<string>(parsed.country);
-  const [usState, setUsState]         = useState<string>(parsed.usState);
-  const [docType, setDocType]         = useState<string>(stored.documentType ?? "");
-  const [concern, setConcern]         = useState<string>(stored.mainConcern ?? "");
-  const [saved, setSaved]             = useState(false);
+  const [country, setCountry] = useState<string>(parsed.country);
+  const [usState, setUsState] = useState<string>(parsed.usState);
+  const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
     const location =
@@ -119,8 +58,6 @@ const Settings = () => {
       ...stored,
       displayName,
       location,
-      documentType: docType,
-      mainConcern: concern,
     };
     localStorage.setItem("bys_user_profile", JSON.stringify(updatedProfile));
 
@@ -131,6 +68,8 @@ const Settings = () => {
   const handleLogout = () => {
     localStorage.removeItem("bys_onboarding_complete");
     localStorage.removeItem("bys_user_profile");
+    localStorage.removeItem("bys_user_id");
+    localStorage.removeItem("bys_user_email");
     navigate("/login");
   };
 
@@ -197,39 +136,6 @@ const Settings = () => {
               </Select>
             </div>
           )}
-
-          <div>
-            <label className="block text-sm font-medium mb-3">
-              What do you usually sign?
-            </label>
-            <div className="grid gap-2">
-              {DOC_TYPE_OPTIONS.map((opt) => (
-                <OptionCard
-                  key={opt.id}
-                  opt={opt}
-                  active={docType === opt.id}
-                  onSelect={() => setDocType(opt.id)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-card rounded-3xl p-7 border border-border shadow-card mb-6">
-        <h2 className="text-base font-semibold mb-5">Preferences</h2>
-        <label className="block text-sm font-medium mb-3">
-          What are you most worried about?
-        </label>
-        <div className="grid gap-2">
-          {CONCERN_OPTIONS.map((opt) => (
-            <OptionCard
-              key={opt.id}
-              opt={opt}
-              active={concern === opt.id}
-              onSelect={() => setConcern(opt.id)}
-            />
-          ))}
         </div>
       </section>
 
