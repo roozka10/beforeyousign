@@ -8,13 +8,36 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Supabase automatically parses hash params and sets session
         const { data: { session }, error } = await supabase.auth.getSession();
 
-        if (error || !session) {
+        if (error) {
+          console.error("Auth error:", error);
           navigate("/login");
           return;
         }
 
+        if (!session) {
+          // Try waiting a moment for session to be established
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          
+          if (!retrySession) {
+            navigate("/login");
+            return;
+          }
+
+          // Use retry session
+          const user = retrySession.user;
+          localStorage.setItem("bys_user_id", user.id);
+          localStorage.setItem("bys_user_email", user.email || "");
+
+          const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
+          navigate(isOnboarded ? "/dashboard" : "/onboarding");
+          return;
+        }
+
+        // Session exists, save user data
         const user = session.user;
         localStorage.setItem("bys_user_id", user.id);
         localStorage.setItem("bys_user_email", user.email || "");
