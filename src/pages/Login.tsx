@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -13,18 +15,59 @@ const GoogleIcon = () => (
 
 const Login = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    const isReturning = localStorage.getItem("bys_onboarding_complete") === "true";
-    navigate(isReturning ? "/dashboard" : "/onboarding");
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const isReturning = localStorage.getItem("bys_onboarding_complete") === "true";
+        navigate(isReturning ? "/dashboard" : "/onboarding");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      alert("Google login error: " + error.message);
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    if (!email) {
+      alert("Please enter your email");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      alert("Error: " + error.message);
+      setLoading(false);
+    } else {
+      alert("Check your email for a login link!");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen w-full bg-background grid grid-cols-1 lg:grid-cols-2 animate-fade-up">
-      {/* Left: sign-in side */}
       <div className="flex items-center justify-center p-8 md:p-12 lg:p-16 min-h-screen">
         <div className="w-full max-w-md">
-          {/* Logo mark */}
           <div className="flex items-center gap-1 mb-8">
             <span className="block w-1.5 h-4 rounded-sm bg-primary/60" />
             <span className="block w-1.5 h-7 rounded-sm bg-primary" />
@@ -41,14 +84,15 @@ const Login = () => {
           <div className="relative mb-6">
             <Button
               variant="outline"
-              onClick={handleLogin}
+              onClick={handleGoogleLogin}
+              disabled={loading}
               className="w-full h-12 bg-secondary hover:bg-accent border-border gap-3 text-base font-medium"
             >
               <GoogleIcon />
               Sign up with Google
             </Button>
             <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-glow">
-              Last used
+              Recommended
             </span>
           </div>
 
@@ -62,14 +106,17 @@ const Login = () => {
           <Input
             type="email"
             placeholder="zuck@meta.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="h-12 bg-secondary border-border mb-5"
           />
 
           <Button
-            onClick={handleLogin}
+            onClick={handleEmailLogin}
+            disabled={loading}
             className="w-full h-12 bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground text-base font-medium shadow-glow transition-smooth"
           >
-            Sign up with email
+            {loading ? "Signing in..." : "Send magic link"}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center mt-6">
@@ -83,13 +130,9 @@ const Login = () => {
             </a>
             .
           </p>
-          <p className="text-xs text-muted-foreground text-center mt-3 cursor-pointer hover:text-foreground transition-colors">
-            Need help?
-          </p>
         </div>
       </div>
 
-      {/* Right: funny quote panel */}
       <div className="hidden lg:flex items-center justify-center bg-secondary/30 p-12 lg:p-20 border-l border-border min-h-screen relative overflow-hidden px-[60px]">
         <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -left-40 w-[28rem] h-[28rem] rounded-full bg-warning/5 blur-3xl pointer-events-none" />
@@ -98,10 +141,11 @@ const Login = () => {
           <div className="text-6xl mb-8">💸</div>
           <blockquote className="text-3xl md:text-4xl font-semibold tracking-tight leading-snug">
             "I read the whole contract,"
-            <span className="block text-primary mt-2">said no one ever.</span>
+            <br />
+            <span className="font-serif italic text-primary">said no one ever</span>
           </blockquote>
-          <figcaption className="text-sm text-muted-foreground mt-8">
-            — Literally everyone, before signing
+          <figcaption className="text-sm text-muted-foreground mt-6">
+            — Every human who's ever signed something
           </figcaption>
         </figure>
       </div>
