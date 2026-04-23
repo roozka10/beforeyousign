@@ -8,48 +8,53 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Supabase automatically parses hash params
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Exchange code for session (PKCE flow)
+        const { data, error } = await supabase.auth.exchangeCodeForSession(
+          window.location.href
+        );
 
-        if (error) {
-          console.error("Auth error:", error);
-          navigate("/login");
-          return;
-        }
-
-        if (!session) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession();
-
-          if (retryError || !retrySession) {
-            navigate("/login");
-            return;
-          }
-
-          const user = retrySession.user;
+        if (!error && data.session) {
+          const user = data.session.user;
           localStorage.setItem("bys_user_id", user.id);
-          localStorage.setItem("bys_user_email", user.email || "");
-
-          // Clear sensitive data from URL
+          localStorage.setItem("bys_user_email", user.email ?? "");
           window.history.replaceState({}, document.title, window.location.pathname);
-
           const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
-          navigate(isOnboarded ? "/dashboard" : "/onboarding");
+          navigate(isOnboarded ? "/dashboard" : "/onboarding", { replace: true });
           return;
         }
 
-        const user = session.user;
-        localStorage.setItem("bys_user_id", user.id);
-        localStorage.setItem("bys_user_email", user.email || "");
+        // Fallback: try getSession (implicit flow / hash)
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-        // Clear sensitive data from URL (removes access_token, refresh_token, etc)
-        window.history.replaceState({}, document.title, window.location.pathname);
+        if (!sessionError && sessionData.session) {
+          const user = sessionData.session.user;
+          localStorage.setItem("bys_user_id", user.id);
+          localStorage.setItem("bys_user_email", user.email ?? "");
+          window.history.replaceState({}, document.title, window.location.pathname);
+          const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
+          navigate(isOnboarded ? "/dashboard" : "/onboarding", { replace: true });
+          return;
+        }
 
-        const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
-        navigate(isOnboarded ? "/dashboard" : "/onboarding");
+        // Wait and retry once more
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const { data: retryData } = await supabase.auth.getSession();
+
+        if (retryData.session) {
+          const user = retryData.session.user;
+          localStorage.setItem("bys_user_id", user.id);
+          localStorage.setItem("bys_user_email", user.email ?? "");
+          window.history.replaceState({}, document.title, window.location.pathname);
+          const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
+          navigate(isOnboarded ? "/dashboard" : "/onboarding", { replace: true });
+          return;
+        }
+
+        // No session found — back to login
+        navigate("/login", { replace: true });
       } catch (err) {
         console.error("Auth callback error:", err);
-        navigate("/login");
+        navigate("/login", { replace: true });
       }
     };
 
