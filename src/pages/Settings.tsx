@@ -70,7 +70,7 @@ const Settings = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.clear();
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const handleClearAll = async () => {
@@ -80,7 +80,7 @@ const Settings = () => {
     if (confirmed) {
       await supabase.auth.signOut();
       localStorage.clear();
-      navigate("/login", { replace: true });
+      navigate("/", { replace: true });
     }
   };
 

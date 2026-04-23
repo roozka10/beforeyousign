@@ -6,7 +6,7 @@
   "redirects": [
     {
       "source": "/onboarding",
-      "destination": "/login",
+      "destination": "/",
       "permanent": false
     }
   ],
