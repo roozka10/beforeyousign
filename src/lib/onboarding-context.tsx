@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { supabase } from "./supabase";
 
 export interface OnboardingData {
   location: string;
@@ -10,7 +11,7 @@ export interface OnboardingData {
 
 interface OnboardingContextType {
   data: OnboardingData | null;
-  saveOnboardingData: (data: OnboardingData) => void;
+  saveOnboardingData: (data: OnboardingData) => Promise<void>;
   clearOnboardingData: () => void;
 }
 
@@ -19,11 +20,28 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [data, setData] = useState<OnboardingData | null>(null);
 
-  const saveOnboardingData = (newData: OnboardingData) => {
-    setData(newData);
-    // Don't log sensitive data in production
-    if (process.env.NODE_ENV === "development") {
-      console.log("Onboarding data saved (dev only)");
+  const saveOnboardingData = async (newData: OnboardingData) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user logged in");
+
+      // Save to Supabase users table
+      const { error } = await supabase
+        .from("users")
+        .update({
+          location: newData.location,
+          main_concern: newData.mainConcern,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setData(newData);
+      localStorage.setItem("bys_user_profile", JSON.stringify(newData));
+    } catch (err) {
+      console.error("Failed to save onboarding data:", err);
+      throw err;
     }
   };
 

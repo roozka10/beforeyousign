@@ -16,11 +16,8 @@ import {
   Briefcase,
   Lock,
   HelpCircle,
-  Clock,
   Repeat,
-  CalendarDays,
   Eye,
-  EyeOff,
   Brain,
   Lock as LockIcon,
   CircleDollarSign,
@@ -129,27 +126,25 @@ const Onboarding = () => {
       ? country !== "" && (country !== "United States" || usState !== "")
       : !!picks[step];
 
-  const next = () => {
+  const next = async () => {
     if (step < TOTAL_STEPS) {
       setStep(step + 1);
     } else {
-      // Save all onboarding data before completing
-      const location = country === "United States" ? `${usState}, USA` : country;
-      const profileData = {
-        location,
-        documentType: picks[2] || "",
-        mainConcern: picks[5] || "",
-      };
-      localStorage.setItem("bys_onboarding_complete", "true");
-      localStorage.setItem("bys_user_profile", JSON.stringify(profileData));
-      saveOnboardingData({
-        location,
-        documentType: picks[2] || "",
-        exitTerms: picks[3] || "",
-        controlBalance: picks[4] || "",
-        mainConcern: picks[5] || "",
-      });
-      setDone(true);
+      try {
+        const location = country === "United States" ? `${usState}, USA` : country;
+        await saveOnboardingData({
+          location,
+          documentType: picks[2] || "",
+          exitTerms: picks[3] || "",
+          controlBalance: picks[4] || "",
+          mainConcern: picks[5] || "",
+        });
+        localStorage.setItem("bys_onboarding_complete", "true");
+        setDone(true);
+      } catch (err) {
+        alert("Failed to save onboarding data. Please try again.");
+        console.error(err);
+      }
     }
   };
 
