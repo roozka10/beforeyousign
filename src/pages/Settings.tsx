@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 import {
   Select,
   SelectContent,
@@ -66,21 +67,20 @@ const Settings = () => {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("bys_onboarding_complete");
-    localStorage.removeItem("bys_user_profile");
-    localStorage.removeItem("bys_user_id");
-    localStorage.removeItem("bys_user_email");
-    navigate("/login");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.clear();
+    navigate("/login", { replace: true });
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     const confirmed = window.confirm(
       "This will delete all your saved data and preferences. Are you sure?"
     );
     if (confirmed) {
+      await supabase.auth.signOut();
       localStorage.clear();
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   };
 
