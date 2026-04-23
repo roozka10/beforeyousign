@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +113,13 @@ const Onboarding = () => {
   const { saveOnboardingData } = useOnboarding();
   const [step, setStep] = useState(1);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("bys_user_id");
+    if (!userId) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const [country, setCountry] = useState<string>("");
   const [usState, setUsState] = useState<string>("");

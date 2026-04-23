@@ -22,7 +22,14 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const saveOnboardingData = async (newData: OnboardingData) => {
     try {
-      const userId = localStorage.getItem("bys_user_id");
+      let userId = localStorage.getItem("bys_user_id");
+
+      // Retry if user ID not immediately available
+      if (!userId) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        userId = localStorage.getItem("bys_user_id");
+      }
+
       if (!userId) throw new Error("No user ID found");
 
       // Save to Supabase users table
