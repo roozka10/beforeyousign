@@ -22,8 +22,8 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const saveOnboardingData = async (newData: OnboardingData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user logged in");
+      const userId = localStorage.getItem("bys_user_id");
+      if (!userId) throw new Error("No user ID found");
 
       // Save to Supabase users table
       const { error } = await supabase
@@ -33,7 +33,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
           main_concern: newData.mainConcern,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", user.id);
+        .eq("id", userId);
 
       if (error) throw error;
 

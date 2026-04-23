@@ -142,8 +142,8 @@ const Onboarding = () => {
         localStorage.setItem("bys_onboarding_complete", "true");
         setDone(true);
       } catch (err) {
-        alert("Failed to save onboarding data. Please try again.");
-        console.error(err);
+        console.error("Onboarding error:", err);
+        navigate("/login");
       }
     }
   };
