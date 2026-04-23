@@ -8,7 +8,7 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Exchange code for session (PKCE flow)
+        // PKCE flow: exchange code for session
         const { data, error } = await supabase.auth.exchangeCodeForSession(
           window.location.href
         );
@@ -18,25 +18,23 @@ const AuthCallback = () => {
           localStorage.setItem("bys_user_id", user.id);
           localStorage.setItem("bys_user_email", user.email ?? "");
           window.history.replaceState({}, document.title, window.location.pathname);
-          const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
-          navigate(isOnboarded ? "/dashboard" : "/onboarding", { replace: true });
+          navigate("/dashboard", { replace: true });
           return;
         }
 
-        // Fallback: try getSession (implicit flow / hash)
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        // Fallback: implicit/hash flow
+        const { data: sessionData } = await supabase.auth.getSession();
 
-        if (!sessionError && sessionData.session) {
+        if (sessionData.session) {
           const user = sessionData.session.user;
           localStorage.setItem("bys_user_id", user.id);
           localStorage.setItem("bys_user_email", user.email ?? "");
           window.history.replaceState({}, document.title, window.location.pathname);
-          const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
-          navigate(isOnboarded ? "/dashboard" : "/onboarding", { replace: true });
+          navigate("/dashboard", { replace: true });
           return;
         }
 
-        // Wait and retry once more
+        // Retry once
         await new Promise(resolve => setTimeout(resolve, 1500));
         const { data: retryData } = await supabase.auth.getSession();
 
@@ -45,12 +43,10 @@ const AuthCallback = () => {
           localStorage.setItem("bys_user_id", user.id);
           localStorage.setItem("bys_user_email", user.email ?? "");
           window.history.replaceState({}, document.title, window.location.pathname);
-          const isOnboarded = localStorage.getItem("bys_onboarding_complete") === "true";
-          navigate(isOnboarded ? "/dashboard" : "/onboarding", { replace: true });
+          navigate("/dashboard", { replace: true });
           return;
         }
 
-        // No session found — back to login
         navigate("/login", { replace: true });
       } catch (err) {
         console.error("Auth callback error:", err);

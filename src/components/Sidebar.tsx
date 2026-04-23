@@ -15,8 +15,8 @@ export const Sidebar = () => {
 
   useEffect(() => {
     const updateProfile = () => {
-      const rawProfile = localStorage.getItem("bys_user_profile");
-      setProfile(rawProfile ? JSON.parse(rawProfile) : null);
+      const loc = localStorage.getItem("bys_user_location");
+      setProfile(loc ? { location: loc } : null);
     };
 
     updateProfile();
