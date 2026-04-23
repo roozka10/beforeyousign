@@ -22,8 +22,9 @@ const Login = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const isReturning = localStorage.getItem("bys_onboarding_complete") === "true";
-        navigate(isReturning ? "/dashboard" : "/onboarding");
+        localStorage.setItem("bys_user_id", session.user.id);
+        localStorage.setItem("bys_user_email", session.user.email ?? "");
+        navigate("/dashboard", { replace: true });
       }
     };
     checkUser();
