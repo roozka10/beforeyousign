@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useOnboarding } from "@/lib/onboarding-context";
 import { analyzeContractWithContext } from "@/lib/contract-analysis-helper";
-import { saveContractResult } from "@/lib/supabase";
+import { saveContractResult, supabase } from "@/lib/supabase";
 import { extractTextFromFile } from "@/lib/pdf-extractor";
+import { getUserCredits, deductCredit } from "@/lib/stripe";
+import { toast } from "sonner";
+import type { UserContext } from "@/services/ai-lawyer";
 
 const loadingMessages = [
   "Reading your contract…",
@@ -17,7 +19,6 @@ const loadingMessages = [
 
 const UploadPage = () => {
   const navigate = useNavigate();
-  const { data: onboardingData } = useOnboarding();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,21 @@ const UploadPage = () => {
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
+
+    // Check user has credits or an active unlimited plan
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast.error("Please sign in to analyse a contract.");
+      navigate("/login");
+      return;
+    }
+
+    const { credits, plan } = await getUserCredits();
+    if (plan !== "unlimited" && credits <= 0) {
+      toast.error("You're out of credits. Buy more to continue.");
+      navigate("/pricing");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -63,11 +79,20 @@ const UploadPage = () => {
 
       console.log(`✅ Extracted ${fileContent.length} characters from ${file.name}`);
 
+      const userLocation =
+        localStorage.getItem(`bys_user_location_${session.user.id}`) ??
+        localStorage.getItem("bys_user_location") ??
+        "United States";
+
+      const userContext: UserContext = {
+        location: userLocation,
+      };
+
       // Analyze with AI
       const analysis = await analyzeContractWithContext(
         fileContent,
         file.name,
-        onboardingData,
+        userContext,
         apiKey
       );
 
@@ -80,11 +105,14 @@ const UploadPage = () => {
         riskLevel: analysis.riskLevel,
         keyIssues: analysis.keyIssues,
         simpleExplanation: analysis.simpleExplanation,
-        userLocation: onboardingData?.location || "United States",
-        documentType: onboardingData?.documentType,
-        mainConcern: onboardingData?.mainConcern,
+        userLocation,
         contractText: fileContent,
       });
+
+      // Deduct one credit for pay-per-use users
+      if (plan !== "unlimited") {
+        await deductCredit(session.user.id);
+      }
 
       // Navigate to result with the real UUID
       navigate(`/result/${savedResult.id}`);

@@ -70,24 +70,56 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadResults();
-    // Show location popup only if we don't have it yet
-    const hasLocation = localStorage.getItem("bys_user_location");
-    if (!hasLocation) {
-      setShowLocationPopup(true);
-    }
+    checkLocationPromptStatus();
   }, []);
+
+  const checkLocationPromptStatus = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    const locationKey = `bys_user_location_${userId}`;
+    const promptSeenKey = `bys_location_prompt_seen_${userId}`;
+
+    const hasLocalLocation = localStorage.getItem(locationKey);
+    const hasSeenPrompt = localStorage.getItem(promptSeenKey) === "true";
+
+    if (hasLocalLocation || hasSeenPrompt) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("location")
+      .eq("id", userId)
+      .single();
+
+    if (profile?.location) {
+      localStorage.setItem(locationKey, profile.location);
+      return;
+    }
+
+    setShowLocationPopup(true);
+  };
 
   const handleLocationDone = async (location: string | null) => {
     setShowLocationPopup(false);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const locationKey = `bys_user_location_${session.user.id}`;
+    const promptSeenKey = `bys_location_prompt_seen_${session.user.id}`;
+    localStorage.setItem(promptSeenKey, "true");
+
     if (!location) return;
 
-    localStorage.setItem("bys_user_location", location);
-    localStorage.setItem("bys_user_profile", JSON.stringify({ location }));
+    localStorage.setItem(locationKey, location);
 
-    // Save to Supabase
-    const userId = localStorage.getItem("bys_user_id");
-    if (userId) {
-      await supabase.from("users").update({ location }).eq("id", userId);
+    // Save to Supabase profiles table
+    if (session.user) {
+      await supabase
+        .from("profiles")
+        .update({ location, updated_at: new Date().toISOString() })
+        .eq("id", session.user.id);
     }
   };
 

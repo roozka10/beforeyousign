@@ -52,7 +52,7 @@ const Privacy = () => {
               <li className="flex gap-3">
                 <span className="font-bold text-primary">•</span>
                 <div>
-                  <span className="font-semibold text-foreground">Your onboarding info</span> - Location, document type, concerns (helps us give better analysis)
+                  <span className="font-semibold text-foreground">Your location preference</span> - Asked once to improve region-specific contract guidance
                 </div>
               </li>
               <li className="flex gap-3">

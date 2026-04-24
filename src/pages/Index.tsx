@@ -43,7 +43,7 @@ const Index = () => {
       <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl">
         <nav className="flex items-center justify-between gap-4 px-3 py-2 rounded-2xl border border-border bg-card/80 backdrop-blur-xl shadow-elevated">
           <Link to="/" className="flex items-center gap-2 pl-2">
-            <img src="/penguin-removebg-preview.png" alt="beforeyousign" className="w-7 h-7 object-contain" />
+            <img src="/placeholder.svg" alt="beforeyousign" className="w-7 h-7 object-contain" />
             <span className="font-semibold tracking-tight">beforeyousign</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
@@ -447,7 +447,7 @@ const Index = () => {
       <footer className="px-6 py-10 border-t border-border">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <img src="/penguin-removebg-preview.png" alt="beforeyousign" className="w-6 h-6 object-contain" />
+            <img src="/placeholder.svg" alt="beforeyousign" className="w-6 h-6 object-contain" />
             <span className="font-semibold text-foreground">beforeyousign</span>
           </div>
           <p>© {new Date().getFullYear()} beforeyousign. Read before you sign.</p>

@@ -4,13 +4,11 @@ import { Button } from "@/components/ui/button";
 import { FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ContractAnalysis } from "@/services/ai-lawyer";
-import { useOnboarding } from "@/lib/onboarding-context";
 import { getContractResult, StoredContractResult } from "@/lib/supabase";
 
 const Result = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: onboardingData } = useOnboarding();
   const [animatedScore, setAnimatedScore] = useState(0);
   const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
   const [storedResult, setStoredResult] = useState<StoredContractResult | null>(null);
@@ -152,7 +150,7 @@ const Result = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <img
-              src="/penguin-removebg-preview.png"
+              src="/placeholder.svg"
               alt="beforeyousign"
               className="w-9 h-9 object-contain"
             />

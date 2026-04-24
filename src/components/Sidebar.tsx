@@ -15,7 +15,10 @@ export const Sidebar = () => {
 
   useEffect(() => {
     const updateProfile = () => {
-      const loc = localStorage.getItem("bys_user_location");
+      const userId = localStorage.getItem("bys_user_id");
+      const loc = userId
+        ? localStorage.getItem(`bys_user_location_${userId}`) ?? localStorage.getItem("bys_user_location")
+        : localStorage.getItem("bys_user_location");
       setProfile(loc ? { location: loc } : null);
     };
 
@@ -28,7 +31,7 @@ export const Sidebar = () => {
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-sidebar flex flex-col p-5">
       <div className="flex items-center gap-2 px-2 mb-10">
-        <img src="/penguin-removebg-preview.png" alt="beforeyousign" className="w-9 h-9 object-contain" />
+        <img src="/placeholder.svg" alt="beforeyousign" className="w-9 h-9 object-contain" />
         <span className="font-semibold text-lg tracking-tight">beforeyousign</span>
       </div>
 

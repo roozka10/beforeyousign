@@ -1,12 +1,11 @@
 import { analyzeContractWithAI, UserContext, ContractAnalysis } from "@/services/ai-lawyer";
-import { OnboardingData } from "./onboarding-context";
 
 const DEFAULT_MODEL = "google/gemma-2-27b-it:free";
 
 export async function analyzeContractWithContext(
   contractText: string,
   fileName: string,
-  onboardingData: OnboardingData | null,
+  userContext: UserContext | null,
   apiKey: string
 ): Promise<ContractAnalysis> {
   if (!contractText || contractText.trim().length === 0) {
@@ -18,16 +17,7 @@ export async function analyzeContractWithContext(
   }
 
   try {
-    // Convert onboarding data to user context
-    const context: UserContext | undefined = onboardingData
-      ? {
-          location: onboardingData.location,
-          documentType: onboardingData.documentType,
-          exitTerms: onboardingData.exitTerms,
-          controlBalance: onboardingData.controlBalance,
-          mainConcern: onboardingData.mainConcern,
-        }
-      : undefined;
+    const context: UserContext | undefined = userContext ?? undefined;
 
     console.log(`🤖 Analyzing with ${DEFAULT_MODEL}...`);
 
