@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, Trash2, MapPin, X } from "lucide-react";
 import { getContractResults, deleteContractResult, StoredContractResult, supabase } from "@/lib/supabase";
+import { getUserCredits } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
 
 const LocationPopup = ({ onDone }: { onDone: (location: string | null) => void }) => {
@@ -67,11 +68,32 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLocationPopup, setShowLocationPopup] = useState(false);
+  const [creditLabel, setCreditLabel] = useState<string>("--");
 
   useEffect(() => {
     loadResults();
     checkLocationPromptStatus();
+    loadCreditStatus();
   }, []);
+
+  const loadCreditStatus = async () => {
+    const billing = await getUserCredits();
+
+    if (billing.plan === "unlimited") {
+      if (billing.plan_started_at) {
+        const startedAt = new Date(billing.plan_started_at);
+        const endAt = new Date(startedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const msLeft = endAt.getTime() - Date.now();
+        const daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+        setCreditLabel(`∞ • ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`);
+      } else {
+        setCreditLabel("∞");
+      }
+      return;
+    }
+
+    setCreditLabel(`${billing.credits} credits`);
+  };
 
   const checkLocationPromptStatus = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -180,14 +202,19 @@ const Dashboard = () => {
               Analyzed with beforeyousign AI lawyer. Stay safe.
             </p>
           </div>
-          <Button
-            onClick={() => navigate("/upload")}
-            size="lg"
-            className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Check a contract
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="h-12 px-4 rounded-2xl border border-border bg-card flex items-center">
+              <span className="text-sm font-semibold">{creditLabel}</span>
+            </div>
+            <Button
+              onClick={() => navigate("/upload")}
+              size="lg"
+              className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Check a contract
+            </Button>
+          </div>
         </div>
 
         {error && (

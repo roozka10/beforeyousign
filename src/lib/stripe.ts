@@ -37,11 +37,18 @@ export async function createCheckoutSession(plan: Plan, quantity = 1) {
 export async function getUserCredits() {
   const { data, error } = await supabase
     .from("user_credits")
-    .select("credits, plan")
+    .select("credits, plan, plan_started_at")
     .single();
 
-  if (error) return { credits: 0, plan: "pay_per_use" as const };
-  return data as { credits: number; plan: "pay_per_use" | "unlimited" };
+  if (error) {
+    return { credits: 0, plan: "pay_per_use" as const, plan_started_at: null as string | null };
+  }
+
+  return data as {
+    credits: number;
+    plan: "pay_per_use" | "unlimited";
+    plan_started_at: string | null;
+  };
 }
 
 export async function deductCredit(userId: string) {
