@@ -19,8 +19,6 @@ export async function analyzeContractWithContext(
   try {
     const context: UserContext | undefined = userContext ?? undefined;
 
-    console.log(`🤖 Analyzing with ${DEFAULT_MODEL}...`);
-
     // Call AI with user context
     const analysis = await analyzeContractWithAI(
       contractText,
@@ -39,7 +37,6 @@ export async function analyzeContractWithContext(
       throw new Error("AI returned invalid response. Please try again.");
     }
 
-    console.log(`✅ Analysis complete: ${analysis.overallScore}/100`);
     return analysis;
   } catch (error) {
     console.error("Analysis error:", error);

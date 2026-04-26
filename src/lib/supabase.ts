@@ -37,12 +37,24 @@ export interface StoredContractResult {
 }
 
 export async function saveContractResult(
-  result: Omit<StoredContractResult, "id" | "createdAt">
+  result: Omit<StoredContractResult, "id" | "createdAt">,
+  userId?: string
 ): Promise<StoredContractResult> {
+  let uid = userId;
+  if (!uid) {
+    const { data: { session } } = await supabase.auth.getSession();
+    uid = session?.user?.id;
+  }
+
+  if (!uid) {
+    throw new Error("Not authenticated — cannot save contract result");
+  }
+
   const { data, error } = await supabase
     .from("contract_results")
     .insert([
       {
+        user_id: uid,
         file_name: result.fileName,
         overall_score: result.overallScore,
         clarity: result.clarity,
@@ -85,9 +97,12 @@ export async function saveContractResult(
 }
 
 export async function getContractResults(): Promise<StoredContractResult[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+
   const { data, error } = await supabase
     .from("contract_results")
     .select("*")
+    .eq("user_id", session?.user?.id ?? "")
     .order("created_at", { ascending: false });
 
   if (error) {

@@ -176,7 +176,6 @@ async function callOpenRouter(
       const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? jsonMatch[0] : cleanContent;
 
-      console.log("Attempting to parse JSON...");
       const analysis = JSON.parse(jsonStr) as ContractAnalysis;
 
       // Validate required fields
@@ -217,7 +216,6 @@ async function callOpenRouter(
         analysis.simpleExplanation = "This contract needs careful review. Please consult with a legal professional.";
       }
 
-      console.log("✅ Successfully parsed AI response");
       return analysis;
     } catch (e) {
       console.error("Raw response:", content);

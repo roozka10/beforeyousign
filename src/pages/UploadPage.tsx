@@ -77,8 +77,6 @@ const UploadPage = () => {
         );
       }
 
-      console.log(`✅ Extracted ${fileContent.length} characters from ${file.name}`);
-
       const userLocation =
         localStorage.getItem(`bys_user_location_${session.user.id}`) ??
         localStorage.getItem("bys_user_location") ??
@@ -107,7 +105,7 @@ const UploadPage = () => {
         simpleExplanation: analysis.simpleExplanation,
         userLocation,
         contractText: fileContent,
-      });
+      }, session.user.id);
 
       // Deduct one credit for pay-per-use users
       if (plan !== "unlimited") {

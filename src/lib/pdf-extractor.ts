@@ -7,12 +7,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    console.log(`📄 Loading PDF: ${file.name} (${file.size} bytes)`);
 
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
-
-    console.log(`📖 PDF loaded: ${pdf.numPages} pages`);
 
     let fullText = "";
 
@@ -30,10 +27,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       }
     }
 
-    const trimmedText = fullText.trim();
-    console.log(`✅ Extracted ${trimmedText.length} characters`);
-
-    return trimmedText;
+    return fullText.trim();
   } catch (error) {
     console.error("PDF extraction error:", error);
     throw new Error(
