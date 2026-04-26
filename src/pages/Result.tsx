@@ -150,7 +150,7 @@ const Result = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <img
-              src="/ChatGPT_Image_Apr_26__2026__09_24_37_AM-removebg-preview.png"
+              src="/logo.png"
               alt="beforeyousign"
               className="w-9 h-9 object-contain"
             />

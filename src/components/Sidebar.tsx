@@ -31,7 +31,7 @@ export const Sidebar = () => {
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-sidebar flex flex-col p-5">
       <div className="flex items-center gap-2 px-2 mb-10">
-        <img src="/ChatGPT_Image_Apr_26__2026__09_24_37_AM-removebg-preview.png" alt="beforeyousign" className="w-9 h-9 object-contain" />
+        <img src="/logo.png" alt="beforeyousign" className="w-9 h-9 object-contain" />
         <span className="font-semibold text-lg tracking-tight">beforeyousign</span>
       </div>
 
