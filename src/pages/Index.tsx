@@ -68,28 +68,26 @@ const Index = () => {
         </nav>
       </header>
 
-      {/* Product Hunt Badge */}
-      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 flex justify-center">
-        <a
-          href="https://www.producthunt.com/products/beforeyousign-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-beforeyousign-2"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            alt="Beforeyousign - Discover what could screw you in a contract | Product Hunt"
-            width="250"
-            height="54"
-            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1132790&theme=dark&t=1777211057379"
-          />
-        </a>
-      </div>
-
       {/* Hero */}
-      <section className="relative overflow-hidden pt-52 pb-24 px-6">
+      <section className="relative overflow-hidden pt-40 pb-24 px-6">
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-primary/10 blur-3xl" />
         </div>
         <div className="max-w-4xl mx-auto text-center animate-fade-up">
+          <div className="flex justify-center mb-5">
+            <a
+              href="https://www.producthunt.com/products/beforeyousign-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-beforeyousign-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                alt="Beforeyousign - Discover what could screw you in a contract | Product Hunt"
+                width="250"
+                height="54"
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1132790&theme=dark&t=1777211057379"
+              />
+            </a>
+          </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/60 text-xs text-muted-foreground mb-6">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
             Risk-first contract analysis
