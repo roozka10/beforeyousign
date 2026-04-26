@@ -71,8 +71,8 @@ IMPORTANT:
 - overallScore, clarity, fairness must be numbers 0-100`;
 };
 
-const DEFAULT_MODEL = "google/gemma-2-27b-it:free";
-const FALLBACK_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
+const DEFAULT_MODEL = "openai/gpt-oss-20b:free";
+const FALLBACK_MODEL = "google/gemma-3-12b-it:free";
 const MODELS_TO_TRY = [DEFAULT_MODEL, FALLBACK_MODEL];
 
 export async function analyzeContractWithAI(

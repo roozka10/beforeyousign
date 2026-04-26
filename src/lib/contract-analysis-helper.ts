@@ -1,6 +1,6 @@
 import { analyzeContractWithAI, UserContext, ContractAnalysis } from "@/services/ai-lawyer";
 
-const DEFAULT_MODEL = "google/gemma-2-27b-it:free";
+const DEFAULT_MODEL = "openai/gpt-oss-20b:free";
 
 export async function analyzeContractWithContext(
   contractText: string,
