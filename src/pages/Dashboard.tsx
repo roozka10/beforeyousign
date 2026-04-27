@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Trash2, MapPin, X, Zap } from "lucide-react";
+import { Upload, FileText, Trash2, MapPin, X, Zap, MessageCircle } from "lucide-react";
 import { getContractResults, deleteContractResult, StoredContractResult, supabase } from "@/lib/supabase";
 import { getUserCredits } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
@@ -206,6 +206,15 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            <a
+              href="https://x.com/messages/compose?recipient_id=Roozka3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-12 px-4 rounded-2xl border border-border bg-card hover:bg-accent hover:border-muted-foreground/30 flex items-center gap-2 transition-smooth text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Get support
+            </a>
             <div className="h-12 px-4 rounded-2xl border border-border bg-card flex items-center">
               <span className="text-sm font-semibold">{creditLabel}</span>
             </div>
