@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Trash2, MapPin, X } from "lucide-react";
+import { Upload, FileText, Trash2, MapPin, X, Zap } from "lucide-react";
 import { getContractResults, deleteContractResult, StoredContractResult, supabase } from "@/lib/supabase";
 import { getUserCredits } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
@@ -69,6 +69,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [creditLabel, setCreditLabel] = useState<string>("--");
+  const [hasCredits, setHasCredits] = useState<boolean>(true);
 
   useEffect(() => {
     loadResults();
@@ -89,9 +90,11 @@ const Dashboard = () => {
       } else {
         setCreditLabel("∞");
       }
+      setHasCredits(true);
       return;
     }
 
+    setHasCredits(billing.credits > 0);
     setCreditLabel(`${billing.credits} credits`);
   };
 
@@ -206,14 +209,25 @@ const Dashboard = () => {
             <div className="h-12 px-4 rounded-2xl border border-border bg-card flex items-center">
               <span className="text-sm font-semibold">{creditLabel}</span>
             </div>
-            <Button
-              onClick={() => navigate("/upload")}
-              size="lg"
-              className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Check a contract
-            </Button>
+            {hasCredits ? (
+              <Button
+                onClick={() => navigate("/upload")}
+                size="lg"
+                className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Check a contract
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigate("/pricing")}
+                size="lg"
+                className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Get more credits
+              </Button>
+            )}
           </div>
         </div>
 

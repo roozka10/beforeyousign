@@ -13,10 +13,31 @@ const AuthCallback = () => {
           window.location.href
         );
 
+        const saveProfile = async (userId: string, email: string, fullName?: string, avatarUrl?: string) => {
+          await supabase.from("profiles").upsert({
+            id: userId,
+            email,
+            full_name: fullName ?? null,
+            avatar_url: avatarUrl ?? null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "id" });
+
+          // Ensure user_credits row exists
+          await supabase.from("user_credits").upsert({
+            user_id: userId,
+            credits: 0,
+            plan: "pay_per_use",
+          }, { onConflict: "user_id", ignoreDuplicates: true });
+        };
+
         if (!error && data.session) {
           const user = data.session.user;
-          localStorage.setItem("bys_user_id", user.id);
-          localStorage.setItem("bys_user_email", user.email ?? "");
+          await saveProfile(
+            user.id,
+            user.email ?? "",
+            user.user_metadata?.full_name,
+            user.user_metadata?.avatar_url
+          );
           window.history.replaceState({}, document.title, window.location.pathname);
           navigate("/dashboard", { replace: true });
           return;
@@ -27,8 +48,12 @@ const AuthCallback = () => {
 
         if (sessionData.session) {
           const user = sessionData.session.user;
-          localStorage.setItem("bys_user_id", user.id);
-          localStorage.setItem("bys_user_email", user.email ?? "");
+          await saveProfile(
+            user.id,
+            user.email ?? "",
+            user.user_metadata?.full_name,
+            user.user_metadata?.avatar_url
+          );
           window.history.replaceState({}, document.title, window.location.pathname);
           navigate("/dashboard", { replace: true });
           return;
@@ -40,8 +65,12 @@ const AuthCallback = () => {
 
         if (retryData.session) {
           const user = retryData.session.user;
-          localStorage.setItem("bys_user_id", user.id);
-          localStorage.setItem("bys_user_email", user.email ?? "");
+          await saveProfile(
+            user.id,
+            user.email ?? "",
+            user.user_metadata?.full_name,
+            user.user_metadata?.avatar_url
+          );
           window.history.replaceState({}, document.title, window.location.pathname);
           navigate("/dashboard", { replace: true });
           return;
