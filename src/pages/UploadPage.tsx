@@ -132,21 +132,21 @@ const UploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center px-6 py-16">
+    <div className="min-h-screen grid place-items-center px-4 md:px-6 py-10 md:py-16">
       <div className="w-full max-w-2xl animate-fade-up">
         {!loading ? (
           <>
-            <div className="text-center mb-12">
-              <h1 className="text-5xl font-semibold tracking-tight mb-4">
+            <div className="text-center mb-8 md:mb-12">
+              <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mb-3 md:mb-4">
                 Drop your contract here
               </h1>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-base md:text-lg">
                 Let's see what's actually going on in there.
               </p>
             </div>
 
             {error && (
-              <div className="bg-danger/10 border border-danger/30 rounded-2xl p-4 mb-8 text-danger text-sm">
+              <div className="bg-danger/10 border border-danger/30 rounded-2xl p-4 mb-6 md:mb-8 text-danger text-sm">
                 {error}
               </div>
             )}
@@ -164,7 +164,7 @@ const UploadPage = () => {
                 if (file) handleFileUpload(file);
               }}
               className={cn(
-                "block rounded-3xl border-2 border-dashed p-16 text-center cursor-pointer transition-smooth bg-card",
+                "block rounded-3xl border-2 border-dashed p-8 md:p-16 text-center cursor-pointer transition-smooth bg-card",
                 dragOver
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-muted-foreground/40 hover:bg-card/80"
@@ -177,12 +177,15 @@ const UploadPage = () => {
                 className="hidden"
                 onChange={() => startUpload()}
               />
-              <div className="w-16 h-16 rounded-2xl bg-background grid place-items-center mx-auto mb-6">
-                <UploadCloud className="w-8 h-8 text-primary" />
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-background grid place-items-center mx-auto mb-5 md:mb-6">
+                <UploadCloud className="w-7 h-7 md:w-8 md:h-8 text-primary" />
               </div>
-              <p className="text-xl font-semibold mb-2">Drag a file in</p>
-              <p className="text-muted-foreground mb-8">
-                PDF, DOCX, or TXT works — we'll handle the rest.
+              <p className="text-lg md:text-xl font-semibold mb-2">
+                <span className="hidden md:inline">Drag a file in</span>
+                <span className="md:hidden">Tap to select a file</span>
+              </p>
+              <p className="text-muted-foreground text-sm md:text-base mb-6 md:mb-8">
+                PDF, DOCX, or TXT — we'll handle the rest.
               </p>
               <Button
                 type="button"
@@ -198,20 +201,20 @@ const UploadPage = () => {
             </label>
           </>
         ) : (
-          <div className="bg-card rounded-3xl p-16 border border-border shadow-elevated text-center animate-scale-in">
-            <div className="relative w-20 h-20 mx-auto mb-10">
+          <div className="bg-card rounded-3xl p-10 md:p-16 border border-border shadow-elevated text-center animate-scale-in">
+            <div className="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-8 md:mb-10">
               <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping" />
-              <div className="relative w-20 h-20 rounded-2xl bg-primary grid place-items-center shadow-glow">
-                <FileText className="w-9 h-9 text-primary-foreground" />
+              <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary grid place-items-center shadow-glow">
+                <FileText className="w-8 h-8 md:w-9 md:h-9 text-primary-foreground" />
               </div>
             </div>
             <p
               key={msgIndex}
-              className="text-3xl font-medium animate-fade-in tracking-tight"
+              className="text-2xl md:text-3xl font-medium animate-fade-in tracking-tight"
             >
               {loadingMessages[msgIndex]}
             </p>
-            <p className="text-muted-foreground mt-4 text-lg">
+            <p className="text-muted-foreground mt-3 md:mt-4 text-base md:text-lg">
               Hang tight, almost done.
             </p>
           </div>

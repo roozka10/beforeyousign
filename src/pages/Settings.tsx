@@ -46,7 +46,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="p-8 max-w-2xl animate-fade-up">
+    <div className="p-4 md:p-8 max-w-2xl animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight mb-1">Settings</h1>
       <p className="text-muted-foreground mb-10">
         Manage your account preferences.

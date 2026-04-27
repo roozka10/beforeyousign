@@ -69,12 +69,12 @@ const Index = () => {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-40 pb-24 px-6">
+      <section className="relative overflow-hidden pt-28 md:pt-40 pb-16 md:pb-24 px-4 md:px-6">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] md:w-[800px] h-[400px] md:h-[500px] rounded-full bg-primary/10 blur-3xl" />
         </div>
         <div className="max-w-4xl mx-auto text-center animate-fade-up">
-          <div className="flex justify-center mb-5">
+          <div className="flex justify-center mb-4 md:mb-5">
             <a
               href="https://www.producthunt.com/products/beforeyousign-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-beforeyousign-2"
               target="_blank"
@@ -82,29 +82,30 @@ const Index = () => {
             >
               <img
                 alt="Beforeyousign - Discover what could screw you in a contract | Product Hunt"
-                width="250"
-                height="54"
+                width="200"
+                height="43"
+                className="md:w-[250px] md:h-[54px]"
                 src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1132790&theme=dark&t=1777211057379"
               />
             </a>
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/60 text-xs text-muted-foreground mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/60 text-xs text-muted-foreground mb-5 md:mb-6">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
             Risk-first contract analysis
           </div>
-          <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-6 leading-[1.05]">
+          <h1 className="text-4xl md:text-7xl font-semibold tracking-tight mb-5 md:mb-6 leading-[1.08] md:leading-[1.05]">
             Discover what could{" "}
             <span className="font-serif italic text-primary">screw you</span>{" "}
             in a contract
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 md:mb-10">
             So you can avoid costly mistakes, fast. No legal jargon — just the
             stuff that actually matters.
           </p>
           <Link to="/login">
             <Button
               size="lg"
-              className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium text-base shadow-glow transition-smooth"
+              className="h-12 md:h-14 px-6 md:px-8 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium text-base shadow-glow transition-smooth"
             >
               Get started — it's free
               <ArrowRight className="w-4 h-4" />
@@ -116,9 +117,9 @@ const Index = () => {
         </div>
 
         {/* Demo video */}
-        <div className="max-w-5xl mx-auto mt-16 animate-fade-up">
-          <div className="relative rounded-3xl border border-border bg-card overflow-hidden shadow-elevated">
-            <div className="absolute -inset-px rounded-3xl bg-gradient-to-b from-primary/20 to-transparent pointer-events-none" />
+        <div className="max-w-5xl mx-auto mt-10 md:mt-16 animate-fade-up">
+          <div className="relative rounded-2xl md:rounded-3xl border border-border bg-card overflow-hidden shadow-elevated">
+            <div className="absolute -inset-px rounded-2xl md:rounded-3xl bg-gradient-to-b from-primary/20 to-transparent pointer-events-none" />
             <video
               src="/beforeyousigndemo.mp4"
               autoPlay
@@ -132,13 +133,13 @@ const Index = () => {
       </section>
 
       {/* Section 2 — Problem */}
-      <section id="problem" className="px-6 py-24">
+      <section id="problem" className="px-4 md:px-6 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium mb-5">
+          <div className="text-center mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium mb-4 md:mb-5">
               <AlertTriangle className="w-3.5 h-3.5" /> The problem
             </div>
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
               Nobody actually reads contracts
             </h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
@@ -173,17 +174,17 @@ const Index = () => {
       </section>
 
       {/* Section 3 — How companies get you */}
-      <section id="how-companies" className="px-6 py-24 border-t border-border">
+      <section id="how-companies" className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-danger/10 text-danger text-xs font-medium mb-5">
+          <div className="text-center mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-danger/10 text-danger text-xs font-medium mb-4 md:mb-5">
               💀 How they get you
             </div>
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
               Some contracts are{" "}
               <span className="font-serif italic">confusing on purpose</span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
               Not all of them… but enough to matter.
             </p>
           </div>
@@ -234,13 +235,13 @@ const Index = () => {
       </section>
 
       {/* Section 4 — How it works */}
-      <section id="how-it-works" className="px-6 py-24 border-t border-border">
+      <section id="how-it-works" className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-5">
+          <div className="text-center mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4 md:mb-5">
               🧠 How it works
             </div>
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
               So we read it for you
             </h2>
           </div>
@@ -299,16 +300,16 @@ const Index = () => {
       </section>
 
       {/* Section 5 — What you get */}
-      <section id="what-you-get" className="px-6 py-24 border-t border-border">
+      <section id="what-you-get" className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-medium mb-5">
+          <div className="text-center mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-medium mb-4 md:mb-5">
               📊 What you get
             </div>
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
               Here's what we actually show you
             </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
               No fluff. Just the stuff that matters.
             </p>
           </div>
@@ -368,13 +369,13 @@ const Index = () => {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="px-6 py-24 border-t border-border">
+      <section id="faq" className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border text-xs text-muted-foreground mb-5">
+          <div className="text-center mb-8 md:mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border text-xs text-muted-foreground mb-4 md:mb-5">
               FAQ
             </div>
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">
               Quick answers
             </h2>
           </div>
@@ -436,13 +437,13 @@ const Index = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="px-6 py-24 border-t border-border">
+      <section className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+          <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
             Stop signing things you{" "}
             <span className="font-serif italic">haven't read</span>
           </h2>
-          <p className="text-muted-foreground text-lg mb-8">
+          <p className="text-muted-foreground text-base md:text-lg mb-6 md:mb-8">
             Drop your contract. Get the truth in seconds.
           </p>
           <Link to="/login">

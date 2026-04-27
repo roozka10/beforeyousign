@@ -197,32 +197,49 @@ const Dashboard = () => {
     <>
       {showLocationPopup && <LocationPopup onDone={handleLocationDone} />}
 
-      <div className="px-10 py-16 max-w-6xl mx-auto animate-fade-in">
-        <div className="flex items-end justify-between mb-16 gap-6 flex-wrap">
+      <div className="px-4 md:px-10 py-8 md:py-16 max-w-6xl mx-auto animate-fade-in">
+        {/* Mobile header */}
+        <div className="flex items-center justify-between mb-2 md:hidden">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="beforeyousign" className="w-7 h-7 object-contain" />
+            <span className="font-semibold tracking-tight">beforeyousign</span>
+          </div>
+          <a
+            href="https://x.com/messages/compose?recipient_id=Roozka3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 px-3 rounded-xl border border-border bg-card flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Support
+          </a>
+        </div>
+
+        <div className="flex items-end justify-between mb-8 md:mb-16 gap-4 flex-wrap">
           <div>
-            <h1 className="text-5xl font-semibold tracking-tight mb-3">Your contracts</h1>
-            <p className="text-muted-foreground text-lg">
+            <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mb-2 md:mb-3">Your contracts</h1>
+            <p className="text-muted-foreground text-sm md:text-lg">
               Analyzed with beforeyousign AI lawyer. Stay safe.
             </p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <a
               href="https://x.com/messages/compose?recipient_id=Roozka3"
               target="_blank"
               rel="noopener noreferrer"
-              className="h-12 px-4 rounded-2xl border border-border bg-card hover:bg-accent hover:border-muted-foreground/30 flex items-center gap-2 transition-smooth text-sm font-medium text-muted-foreground hover:text-foreground"
+              className="hidden md:flex h-12 px-4 rounded-2xl border border-border bg-card hover:bg-accent hover:border-muted-foreground/30 items-center gap-2 transition-smooth text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               <MessageCircle className="w-4 h-4" />
               Get support
             </a>
-            <div className="h-12 px-4 rounded-2xl border border-border bg-card flex items-center">
-              <span className="text-sm font-semibold">{creditLabel}</span>
+            <div className="h-10 md:h-12 px-3 md:px-4 rounded-2xl border border-border bg-card flex items-center">
+              <span className="text-xs md:text-sm font-semibold">{creditLabel}</span>
             </div>
             {hasCredits ? (
               <Button
                 onClick={() => navigate("/upload")}
                 size="lg"
-                className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+                className="h-10 md:h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-4 md:px-6 shadow-glow transition-smooth text-sm"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Check a contract
@@ -231,7 +248,7 @@ const Dashboard = () => {
               <Button
                 onClick={() => navigate("/pricing")}
                 size="lg"
-                className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+                className="h-10 md:h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-4 md:px-6 shadow-glow transition-smooth text-sm"
               >
                 <Zap className="w-4 h-4 mr-2" />
                 Get more credits
@@ -254,13 +271,13 @@ const Dashboard = () => {
             </div>
           </div>
         ) : results.length === 0 ? (
-          <div className="grid place-items-center min-h-96">
-            <div className="text-center max-w-md">
-              <div className="w-16 h-16 rounded-2xl bg-secondary grid place-items-center mx-auto mb-6">
-                <FileText className="w-8 h-8 text-muted-foreground" />
+          <div className="grid place-items-center min-h-72 md:min-h-96">
+            <div className="text-center max-w-md px-2">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary grid place-items-center mx-auto mb-5 md:mb-6">
+                <FileText className="w-7 h-7 md:w-8 md:h-8 text-muted-foreground" />
               </div>
-              <h2 className="text-2xl font-semibold mb-3">No contracts yet</h2>
-              <p className="text-muted-foreground mb-8">
+              <h2 className="text-xl md:text-2xl font-semibold mb-2 md:mb-3">No contracts yet</h2>
+              <p className="text-muted-foreground text-sm md:text-base mb-6 md:mb-8">
                 Upload your first contract to get started. Our AI lawyer will analyze it in seconds.
               </p>
               <Button
@@ -273,18 +290,18 @@ const Dashboard = () => {
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {results.map((result, i) => {
               const color = getScoreColor(result.overallScore);
               return (
                 <div
                   key={result.id}
                   style={{ animationDelay: `${i * 80}ms` }}
-                  className="group text-left bg-card rounded-3xl p-7 border border-border shadow-card hover:shadow-elevated hover:-translate-y-1 hover:border-muted-foreground/30 transition-smooth animate-fade-up relative"
+                  className="group text-left bg-card rounded-2xl md:rounded-3xl p-5 md:p-7 border border-border shadow-card hover:shadow-elevated hover:-translate-y-1 hover:border-muted-foreground/30 transition-smooth animate-fade-up relative"
                 >
                   <button
                     onClick={() => handleDelete(result.id)}
-                    className="absolute top-4 right-4 p-2 rounded-lg bg-background border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-danger/10 hover:border-danger/30 hover:text-danger"
+                    className="absolute top-4 right-4 p-2 rounded-lg bg-background border border-border opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-danger/10 hover:border-danger/30 hover:text-danger"
                     title="Delete contract"
                   >
                     <Trash2 className="w-4 h-4" />
