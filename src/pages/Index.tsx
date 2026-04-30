@@ -12,9 +12,7 @@ import {
   Upload,
   ScanSearch,
   FileCheck2,
-  Gauge,
   AlertTriangle,
-  CheckCircle2,
   Sparkles,
   ArrowRight,
 } from "lucide-react";
@@ -23,7 +21,6 @@ const sections = [
   { id: "problem", label: "Problem" },
   { id: "how-companies", label: "How they get you" },
   { id: "how-it-works", label: "How it works" },
-  { id: "what-you-get", label: "What you get" },
   { id: "faq", label: "FAQ" },
 ];
 
@@ -295,75 +292,6 @@ const Index = () => {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 5 — What you get */}
-      <section id="what-you-get" className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10 md:mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-medium mb-4 md:mb-5">
-              📊 What you get
-            </div>
-            <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
-              Here's what we actually show you
-            </h2>
-            <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
-              No fluff. Just the stuff that matters.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-5">
-            {[
-              {
-                icon: Gauge,
-                title: "A score",
-                body: "So you instantly know if it's fine or kinda sketchy.",
-                tone: "primary",
-              },
-              {
-                icon: AlertTriangle,
-                title: "The risky parts",
-                body: "Stuff that could lock you in, cost you money, or cause problems later.",
-                tone: "danger",
-              },
-              {
-                icon: CheckCircle2,
-                title: "What's actually okay",
-                body: "Not everything is bad — we'll tell you what's normal too.",
-                tone: "success",
-              },
-              {
-                icon: Sparkles,
-                title: "A simple explanation",
-                body: "What this contract really means in plain English.",
-                tone: "warning",
-              },
-            ].map(({ icon: Icon, title, body, tone }) => (
-              <div
-                key={title}
-                className="p-6 rounded-2xl border border-border bg-card hover:bg-card/80 transition-smooth"
-              >
-                <div
-                  className={`w-11 h-11 rounded-xl grid place-items-center mb-5 ${
-                    tone === "primary"
-                      ? "bg-primary/10 text-primary"
-                      : tone === "danger"
-                      ? "bg-danger/10 text-danger"
-                      : tone === "success"
-                      ? "bg-success/10 text-success"
-                      : "bg-warning/10 text-warning"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {body}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

@@ -41,7 +41,7 @@ WHAT TO DO:
 1. Give scores 0-100 (0 = bad, 100 = good)
 2. Find BAD PARTS that could hurt them
 3. Explain like you're talking to a 8-year-old - use easy words only!
-4. Keep it SHORT and make jokes
+4. Keep it SHORT and make jokes but dont go to far
 5. Use real examples the person knows
 6. Say if it's bad - don't hide it!
 7. Make it FUN and friendly
