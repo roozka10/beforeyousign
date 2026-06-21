@@ -10,7 +10,6 @@ import Dashboard from "./pages/Dashboard.tsx";
 import UploadPage from "./pages/UploadPage.tsx";
 import Result from "./pages/Result.tsx";
 import Login from "./pages/Login.tsx";
-import Pricing from "./pages/Pricing.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Settings from "./pages/Settings.tsx";
@@ -28,7 +27,6 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/pricing" element={<Pricing />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/auth/callback" element={<AuthCallback />} />

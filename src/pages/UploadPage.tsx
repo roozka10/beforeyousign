@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { analyzeContractWithContext } from "@/lib/contract-analysis-helper";
 import { saveContractResult, supabase } from "@/lib/supabase";
 import { extractTextFromFile } from "@/lib/pdf-extractor";
-import { getUserCredits, deductCredit } from "@/lib/stripe";
 import { toast } from "sonner";
 import type { UserContext } from "@/services/ai-lawyer";
 
@@ -36,18 +35,10 @@ const UploadPage = () => {
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
-    // Check user has credits or an active unlimited plan
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       toast.error("Please sign in to analyse a contract.");
       navigate("/login");
-      return;
-    }
-
-    const { credits, plan } = await getUserCredits();
-    if (plan !== "unlimited" && credits <= 0) {
-      toast.error("You're out of credits. Buy more to continue.");
-      navigate("/pricing");
       return;
     }
 
@@ -106,11 +97,6 @@ const UploadPage = () => {
         userLocation,
         contractText: fileContent,
       }, session.user.id);
-
-      // Deduct one credit for pay-per-use users
-      if (plan !== "unlimited") {
-        await deductCredit(session.user.id);
-      }
 
       // Navigate to result with the real UUID
       navigate(`/result/${savedResult.id}`);

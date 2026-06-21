@@ -21,13 +21,6 @@ const AuthCallback = () => {
             avatar_url: avatarUrl ?? null,
             updated_at: new Date().toISOString(),
           }, { onConflict: "id" });
-
-          // Ensure user_credits row exists
-          await supabase.from("user_credits").upsert({
-            user_id: userId,
-            credits: 0,
-            plan: "pay_per_use",
-          }, { onConflict: "user_id", ignoreDuplicates: true });
         };
 
         if (!error && data.session) {
