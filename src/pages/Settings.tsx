@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { MapPin, LogOut, Trash2 } from "lucide-react";
+import { MapPin, LogOut, Trash2, DollarSign } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -67,6 +68,21 @@ const Settings = () => {
             </p>
           </div>
         </div>
+      </section>
+
+      <section className="bg-card rounded-3xl p-7 border border-border shadow-card mb-6">
+        <h2 className="text-base font-semibold mb-2 flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-primary" />
+          Site earnings
+        </h2>
+        <p className="text-sm text-muted-foreground mb-5">
+          See where ad and affiliate money gets paid out, and which programs to sign up for.
+        </p>
+        <Link to="/earnings">
+          <Button className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
+            Open earnings guide
+          </Button>
+        </Link>
       </section>
 
       <section className="bg-card rounded-3xl p-7 border border-destructive/30 shadow-card">

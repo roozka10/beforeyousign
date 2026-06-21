@@ -13,6 +13,7 @@ import Login from "./pages/Login.tsx";
 import Terms from "./pages/Terms.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Settings from "./pages/Settings.tsx";
+import Earnings from "./pages/Earnings.tsx";
 import { AppLayout } from "./components/AppLayout.tsx";
 import AuthCallback from "./pages/AuthCallback.tsx";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/result/:id" element={<Result />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/earnings" element={<Earnings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
