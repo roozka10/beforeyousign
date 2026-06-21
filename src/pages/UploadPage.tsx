@@ -8,6 +8,7 @@ import { saveContractResult, supabase } from "@/lib/supabase";
 import { extractTextFromFile } from "@/lib/pdf-extractor";
 import { toast } from "sonner";
 import type { UserContext } from "@/services/ai-lawyer";
+import { AdUnit } from "@/components/monetization/AdUnit";
 
 const loadingMessages = [
   "Reading your contract…",
@@ -203,6 +204,12 @@ const UploadPage = () => {
           </div>
         )}
       </div>
+
+      {!loading && (
+        <div className="w-full max-w-2xl mx-auto mt-10 px-6">
+          <AdUnit />
+        </div>
+      )}
     </div>
   );
 };

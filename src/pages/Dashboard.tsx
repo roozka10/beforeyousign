@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Upload, FileText, Trash2, MapPin, X, MessageCircle } from "lucide-react";
 import { getContractResults, deleteContractResult, StoredContractResult, supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { AdUnit } from "@/components/monetization/AdUnit";
+import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
 const LocationPopup = ({ onDone }: { onDone: (location: string | null) => void }) => {
   const [loading, setLoading] = useState(false);
@@ -322,6 +324,11 @@ const Dashboard = () => {
             })}
           </div>
         )}
+      </div>
+
+      <div className="px-4 md:px-10 pb-10 max-w-6xl mx-auto">
+        <AdUnit className="mb-10" format="horizontal" />
+        <AffiliatePartners compact />
       </div>
     </>
   );

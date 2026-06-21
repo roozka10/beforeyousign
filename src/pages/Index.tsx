@@ -16,6 +16,8 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { AdUnit } from "@/components/monetization/AdUnit";
+import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
 const sections = [
   { id: "problem", label: "Problem" },
@@ -126,6 +128,12 @@ const Index = () => {
               className="w-full h-auto block"
             />
           </div>
+        </div>
+      </section>
+
+      <section className="px-4 md:px-6 pb-8">
+        <div className="max-w-5xl mx-auto">
+          <AdUnit />
         </div>
       </section>
 
@@ -296,6 +304,12 @@ const Index = () => {
         </div>
       </section>
 
+      <section className="px-4 md:px-6 py-8 border-t border-border">
+        <div className="max-w-5xl mx-auto">
+          <AdUnit format="horizontal" />
+        </div>
+      </section>
+
       {/* FAQ */}
       <section id="faq" className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-3xl mx-auto">
@@ -364,6 +378,12 @@ const Index = () => {
         </div>
       </section>
 
+      <section className="px-4 md:px-6 py-16 md:py-20 border-t border-border">
+        <div className="max-w-5xl mx-auto">
+          <AffiliatePartners />
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="px-4 md:px-6 py-16 md:py-24 border-t border-border">
         <div className="max-w-3xl mx-auto text-center">
@@ -388,12 +408,24 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="px-6 py-10 border-t border-border">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="beforeyousign" className="w-6 h-6 object-contain" />
-            <span className="font-semibold text-foreground">beforeyousign</span>
+        <div className="max-w-5xl mx-auto flex flex-col gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="beforeyousign" className="w-6 h-6 object-contain" />
+              <span className="font-semibold text-foreground">beforeyousign</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link to="/terms" className="hover:text-foreground transition-colors">
+                Terms
+              </Link>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">
+                Privacy
+              </Link>
+            </div>
           </div>
-          <p>© {new Date().getFullYear()} beforeyousign. Read before you sign.</p>
+          <p className="text-center md:text-left">
+            © {new Date().getFullYear()} beforeyousign. Read before you sign.
+          </p>
         </div>
       </footer>
     </div>

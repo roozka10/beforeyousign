@@ -5,6 +5,8 @@ import { FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ContractAnalysis } from "@/services/ai-lawyer";
 import { getContractResult, StoredContractResult } from "@/lib/supabase";
+import { AdUnit } from "@/components/monetization/AdUnit";
+import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
 const Result = () => {
   const navigate = useNavigate();
@@ -239,6 +241,21 @@ const Result = () => {
             {analysis.simpleExplanation}
           </p>
         </div>
+
+        <div className="my-8">
+          <AdUnit format="horizontal" />
+        </div>
+
+        <AffiliatePartners
+          title={analysis.riskLevel === "high" ? "This contract looks risky — get backup" : "Before you sign, consider these tools"}
+          subtitle={
+            analysis.riskLevel === "high"
+              ? "High-risk contracts are worth a second look from a real attorney or secure signing tool."
+              : "Extra protection for subscriptions, legal review, and safe e-signatures."
+          }
+          compact
+          className="mb-8"
+        />
 
         {/* Bottom action bar */}
         <div className="flex flex-col sm:flex-row gap-3">
