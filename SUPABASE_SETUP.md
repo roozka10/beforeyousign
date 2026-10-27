@@ -81,7 +81,7 @@ CREATE POLICY "Enable delete access for all users" ON contract_results
 | `VITE_SUPABASE_URL` | Your Supabase URL | Production, Preview, Development |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase Anon Key | Production, Preview, Development |
 | `VITE_OPENROUTER_API_KEY` | Your OpenRouter key | Production, Preview, Development |
-| `VITE_OPENROUTER_MODEL` | `deepseek/deepseek-r1-distill:free` | Production, Preview, Development |
+| `VITE_OPENROUTER_MODEL` | `google/gemma-4-26b-a4b-it:free` | Production, Preview, Development |
 
 5. Click **"Save"**
 
@@ -106,7 +106,7 @@ Before deploying, test locally:
 VITE_SUPABASE_URL=your_url_here
 VITE_SUPABASE_ANON_KEY=your_key_here
 VITE_OPENROUTER_API_KEY=your_key_here
-VITE_OPENROUTER_MODEL=deepseek/deepseek-r1-distill:free
+VITE_OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
 ```
 
 2. Run dev server:

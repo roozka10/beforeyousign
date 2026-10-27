@@ -62,7 +62,7 @@ Click **"Environment Variables"** and add these:
 VITE_SUPABASE_URL = your_supabase_url
 VITE_SUPABASE_ANON_KEY = your_supabase_anon_key
 VITE_OPENROUTER_API_KEY = your_openrouter_api_key
-VITE_OPENROUTER_MODEL = deepseek/deepseek-r1-distill:free
+VITE_OPENROUTER_MODEL = google/gemma-4-26b-a4b-it:free
 ```
 
 **Where to find these:**

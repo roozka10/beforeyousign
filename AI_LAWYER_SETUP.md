@@ -21,22 +21,23 @@ The AI analyzes contracts and provides:
 - Get your API key from the dashboard
 
 ### 2. Choose Your Model
-Using Deepseek model:
-- `deepseek/deepseek-r1-distill:free` - Deepseek R1 Distill (Free) ✅ **Selected**
+Using a current OpenRouter free model:
+- `google/gemma-4-26b-a4b-it:free` - Gemma 4 26B A4B (Free, fast MoE) ✅ **Selected**
+- Fallback: `nvidia/nemotron-3.5-lightning:free`
 
 ### 3. Set Environment Variables on Vercel
 Add these environment variables to your Vercel project settings:
 
 ```
 VITE_OPENROUTER_API_KEY=your_openrouter_api_key_here
-VITE_OPENROUTER_MODEL=deepseek/deepseek-r1-distill:free
+VITE_OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
 VITE_USER_LOCATION=United States
 ```
 
 Or locally in `.env`:
 ```
 VITE_OPENROUTER_API_KEY=your_api_key_here
-VITE_OPENROUTER_MODEL=deepseek/deepseek-r1-distill:free
+VITE_OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
 VITE_USER_LOCATION=United States
 ```
 
