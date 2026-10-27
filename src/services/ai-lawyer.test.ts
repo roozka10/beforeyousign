@@ -55,6 +55,55 @@ describe("analyzeContractWithAI", () => {
     expect(firstRequest).not.toHaveProperty("reasoning");
   });
 
+  it("falls back when a provider truncates its JSON response", async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: { content: '{"overallScore":72,"simpleExplanation":"cut off' },
+                finish_reason: "length",
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    overallScore: 72,
+                    clarity: 80,
+                    fairness: 65,
+                    riskLevel: "medium",
+                    keyIssues: ["Issue one", "Issue two", "Issue three"],
+                    simpleExplanation: "Review these terms before signing.",
+                  }),
+                },
+              },
+            ],
+          }),
+          { status: 200 }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await analyzeContractWithAI(
+      "Contract text",
+      "contract.pdf",
+      "test-api-key"
+    );
+
+    expect(result.simpleExplanation).toBe("Review these terms before signing.");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("preserves the provider's error message", async () => {
     vi.stubGlobal(
       "fetch",

@@ -1,14 +1,8 @@
-import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 
 export const AppLayout = () => {
-  useEffect(() => {
-    document.documentElement.classList.add("has-app-nav");
-    return () => document.documentElement.classList.remove("has-app-nav");
-  }, []);
-
   return (
     <div className="min-h-screen flex bg-background">
       {/* Sidebar: visible on md+ only */}

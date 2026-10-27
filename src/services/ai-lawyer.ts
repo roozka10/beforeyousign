@@ -32,43 +32,15 @@ const getAILawyerPrompt = (context?: UserContext): string => {
     }
   }
 
-  return `You are explaining a contract to a kid. Use SUPER SIMPLE words. No fancy stuff.
+  return `Explain this contract in plain, simple language. Be brief and direct.
 
 LOCATION: ${locationContext}
 DOCUMENT: ${documentContext}
 
-WHAT TO DO:
-1. Give scores 0-100 (0 = bad, 100 = good)
-2. Find BAD PARTS that could hurt them
-3. Explain like you're talking to a 8-year-old - use easy words only!
-4. Keep it SHORT and make jokes but dont go to far
-5. Use real examples the person knows
-6. Say if it's bad - don't hide it!
-7. Make it FUN and friendly
+Return only one valid JSON object with exactly these fields:
+{"overallScore":0,"clarity":0,"fairness":0,"riskLevel":"low","keyIssues":["","",""],"simpleExplanation":""}
 
-EXAMPLE: Instead of "termination clause" say "when can they kick you out"
-EXAMPLE: Instead of "liability" say "if things go wrong, who pays"
-
-YOU MUST RESPOND WITH ONLY VALID JSON. NO MARKDOWN, NO EXTRA TEXT.
-
-RESPOND EXACTLY LIKE THIS (VALID JSON ONLY):
-{
-  "overallScore": 45,
-  "clarity": 60,
-  "fairness": 35,
-  "riskLevel": "high",
-  "keyIssues": ["First risk here", "Second risk here", "Third risk here"],
-  "simpleExplanation": "Start explaining the contract in simple terms. Mention the biggest problems. Keep it short and friendly. Use real examples from the contract."
-}
-
-IMPORTANT:
-- ONLY return JSON
-- No markdown
-- No explanation text before or after
-- All strings must use double quotes
-- riskLevel must be: low, medium, or high
-- keyIssues must be an array with 3 strings
-- overallScore, clarity, fairness must be numbers 0-100`;
+Use scores from 0 to 100. Set riskLevel to low, medium, or high. Give exactly 3 short key issues (one sentence each). Keep simpleExplanation to 2 short sentences. Do not include markdown or text outside the JSON.`;
 };
 
 const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
@@ -203,17 +175,23 @@ async function callOpenRouter(
     const data = await response.json();
     const choice = Array.isArray(data.choices) ? data.choices[0] : undefined;
     const content = extractMessageText(choice?.message);
+    const finishReason =
+      choice && typeof choice.finish_reason === "string"
+        ? choice.finish_reason
+        : "unknown";
 
     if (!content) {
-      const finishReason =
-        choice && typeof choice.finish_reason === "string"
-          ? choice.finish_reason
-          : "unknown";
       console.error("AI returned an empty message", { model, finishReason });
       throw new Error(
         finishReason === "length"
           ? "AI response was cut off before it could finish. Please try again."
           : "AI returned an empty response. The model may be temporarily unavailable; please try again."
+      );
+    }
+
+    if (finishReason === "length") {
+      throw new Error(
+        "AI response was cut off before it could finish. Please try again."
       );
     }
 
