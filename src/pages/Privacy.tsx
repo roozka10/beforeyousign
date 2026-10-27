@@ -158,7 +158,7 @@ const Privacy = () => {
             <p className="text-muted-foreground leading-relaxed mb-4">
               We use:
             </p>
-            <ul className="space-y-2 text-muted-foreground list-disc list-inside">
+            <ul className="space-y-2 text-muted-foreground list-disc pl-5 break-words">
               <li><span className="font-semibold text-foreground">Supabase</span> - Database storage</li>
               <li><span className="font-semibold text-foreground">OpenRouter</span> - AI analysis (they don't store your contracts)</li>
               <li><span className="font-semibold text-foreground">Vercel</span> - App hosting</li>

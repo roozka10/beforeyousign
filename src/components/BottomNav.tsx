@@ -22,7 +22,7 @@ export const BottomNav = () => {
             key={to}
             to={to}
             className={cn(
-              "flex flex-col items-center gap-1 px-5 py-3 rounded-2xl transition-smooth",
+              "flex flex-1 max-w-32 flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-2xl transition-smooth",
               active ? "text-primary" : "text-muted-foreground"
             )}
           >

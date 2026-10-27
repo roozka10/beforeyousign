@@ -74,6 +74,35 @@ IMPORTANT:
 const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
 const FALLBACK_MODEL = "nvidia/nemotron-3.5-lightning:free";
 const MODELS_TO_TRY = [DEFAULT_MODEL, FALLBACK_MODEL];
+const MAX_CONTRACT_CHARS = 24_000;
+
+function extractMessageText(message: unknown): string {
+  if (!message || typeof message !== "object") return "";
+  const msg = message as Record<string, unknown>;
+  const chunks: string[] = [];
+
+  const collect = (value: unknown) => {
+    if (!value) return;
+    if (typeof value === "string") {
+      if (value.trim()) chunks.push(value);
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) collect(item);
+      return;
+    }
+    if (typeof value === "object") {
+      const part = value as Record<string, unknown>;
+      collect(part.text);
+      collect(part.content);
+      collect(part.summary);
+    }
+  };
+
+  collect(msg.content);
+
+  return chunks.join("\n").trim();
+}
 
 export async function analyzeContractWithAI(
   contractText: string,
@@ -86,12 +115,17 @@ export async function analyzeContractWithAI(
     throw new Error("OpenRouter API key not configured. Add VITE_OPENROUTER_API_KEY to your environment.");
   }
 
+  const clippedContract =
+    contractText.length > MAX_CONTRACT_CHARS
+      ? `${contractText.slice(0, MAX_CONTRACT_CHARS)}\n\n[Contract truncated for analysis]`
+      : contractText;
+
   const userMessage = `
 CONTRACT TO ANALYZE:
 File: ${fileName}
 
 Contract Content:
-${contractText}
+${clippedContract}
 
 Analyze this contract according to the rules provided. Respond ONLY with valid JSON, no other text.
 `;
@@ -99,16 +133,17 @@ Analyze this contract according to the rules provided. Respond ONLY with valid J
   // Try primary model first, fall back to fallback if it fails
   const modelsToTry = model === DEFAULT_MODEL ? MODELS_TO_TRY : [model];
 
-  for (const modelToUse of modelsToTry) {
+  for (const [index, modelToUse] of modelsToTry.entries()) {
     try {
       return await callOpenRouter(modelToUse, context, userMessage, openRouterApiKey);
     } catch (error) {
-      console.warn(`Model ${modelToUse} failed, trying next...`, error);
-      // If this is the last model, throw the error
-      if (modelToUse === modelsToTry[modelsToTry.length - 1]) {
+      if (index === modelsToTry.length - 1) {
         throw error;
       }
-      // Otherwise, continue to next model
+      console.warn(
+        `Model ${modelToUse} failed; trying ${modelsToTry[index + 1]} next.`,
+        error
+      );
     }
   }
 
@@ -130,7 +165,7 @@ async function callOpenRouter(
         Authorization: `Bearer ${openRouterApiKey}`,
       },
       body: JSON.stringify({
-        model: model,
+        model,
         messages: [
           {
             role: "system",
@@ -141,33 +176,51 @@ async function callOpenRouter(
             content: userMessage,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        temperature: 0.3,
+        max_tokens: 4000,
       }),
     });
 
     if (!response.ok) {
-      try {
-        const error = await response.json();
-        console.error("API error response:", error);
-        throw new Error(`OpenRouter API error: ${error.error?.message || JSON.stringify(error)}`);
-      } catch (parseError) {
-        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-      }
+      const error = await response.json().catch(() => null);
+      const errorMessage =
+        error &&
+        typeof error === "object" &&
+        "error" in error &&
+        error.error &&
+        typeof error.error === "object" &&
+        "message" in error.error &&
+        typeof error.error.message === "string"
+          ? error.error.message
+          : null;
+      throw new Error(
+        errorMessage
+          ? `OpenRouter API error: ${errorMessage}`
+          : `OpenRouter API error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    const choice = Array.isArray(data.choices) ? data.choices[0] : undefined;
+    const content = extractMessageText(choice?.message);
 
     if (!content) {
-      console.error("Empty response from AI:", data);
-      throw new Error("AI returned empty response. Please try again.");
+      const finishReason =
+        choice && typeof choice.finish_reason === "string"
+          ? choice.finish_reason
+          : "unknown";
+      console.error("AI returned an empty message", { model, finishReason });
+      throw new Error(
+        finishReason === "length"
+          ? "AI response was cut off before it could finish. Please try again."
+          : "AI returned an empty response. The model may be temporarily unavailable; please try again."
+      );
     }
 
     // Parse the JSON response
     try {
       // Clean up the response - remove markdown code blocks if present
-      let cleanContent = content
+      const cleanContent = content
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();

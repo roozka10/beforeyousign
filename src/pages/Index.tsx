@@ -40,10 +40,10 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       {/* Floating nav */}
       <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl">
-        <nav className="flex items-center justify-between gap-4 px-3 py-2 rounded-2xl border border-border bg-card/80 backdrop-blur-xl shadow-elevated">
-          <Link to="/" className="flex items-center gap-2 pl-2">
-            <img src="/logo.png" alt="beforeyousign" className="w-7 h-7 object-contain" />
-            <span className="font-semibold tracking-tight">beforeyousign</span>
+        <nav className="flex items-center justify-between gap-2 sm:gap-4 px-3 py-2 rounded-2xl border border-border bg-card/80 backdrop-blur-xl shadow-elevated">
+          <Link to="/" className="flex items-center gap-2 pl-1 sm:pl-2 min-w-0">
+            <img src="/logo.png" alt="beforeyousign" className="w-7 h-7 object-contain shrink-0" />
+            <span className="font-semibold tracking-tight truncate">beforeyousign</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
             {sections.map((s) => (
@@ -407,7 +407,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-10 border-t border-border">
+      <footer className="px-6 py-10 pb-32 md:pb-10 border-t border-border">
         <div className="max-w-5xl mx-auto flex flex-col gap-4 text-sm text-muted-foreground">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">

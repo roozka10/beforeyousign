@@ -129,3 +129,26 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* Yeti mascot: keep it small and above the mobile bottom nav */
+#yeti-widget-container {
+  overflow: visible;
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  #yeti-widget-container iframe {
+    right: 12px !important;
+    bottom: 12px !important;
+    transform: scale(0.5) !important;
+    transform-origin: bottom right !important;
+  }
+
+  html.has-app-nav #yeti-widget-container iframe {
+    bottom: calc(4.85rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

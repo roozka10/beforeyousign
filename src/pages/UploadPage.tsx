@@ -119,15 +119,15 @@ const UploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center px-6 py-16">
+    <div className="min-h-screen grid place-items-center px-4 md:px-6 py-12 md:py-16">
       <div className="w-full max-w-2xl animate-fade-up">
         {!loading ? (
           <>
-            <div className="text-center mb-12">
-              <h1 className="text-5xl font-semibold tracking-tight mb-4">
+            <div className="text-center mb-8 md:mb-12">
+              <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4">
                 Drop your contract here
               </h1>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-base md:text-lg">
                 Let's see what's actually going on in there.
               </p>
             </div>
@@ -151,7 +151,7 @@ const UploadPage = () => {
                 if (file) handleFileUpload(file);
               }}
               className={cn(
-                "block rounded-3xl border-2 border-dashed p-16 text-center cursor-pointer transition-smooth bg-card",
+                "block rounded-3xl border-2 border-dashed p-8 md:p-16 text-center cursor-pointer transition-smooth bg-card",
                 dragOver
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-muted-foreground/40 hover:bg-card/80"
@@ -185,7 +185,7 @@ const UploadPage = () => {
             </label>
           </>
         ) : (
-          <div className="bg-card rounded-3xl p-16 border border-border shadow-elevated text-center animate-scale-in">
+          <div className="bg-card rounded-3xl p-8 md:p-16 border border-border shadow-elevated text-center animate-scale-in">
             <div className="relative w-20 h-20 mx-auto mb-10">
               <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping" />
               <div className="relative w-20 h-20 rounded-2xl bg-primary grid place-items-center shadow-glow">
@@ -194,7 +194,7 @@ const UploadPage = () => {
             </div>
             <p
               key={msgIndex}
-              className="text-3xl font-medium animate-fade-in tracking-tight"
+              className="text-2xl md:text-3xl font-medium animate-fade-in tracking-tight"
             >
               {loadingMessages[msgIndex]}
             </p>

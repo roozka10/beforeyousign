@@ -92,7 +92,7 @@ const Terms = () => {
             <p className="text-muted-foreground leading-relaxed mb-4">
               By using beforeyousign, you agree that:
             </p>
-            <ul className="space-y-2 text-muted-foreground list-disc list-inside">
+            <ul className="space-y-2 text-muted-foreground list-disc pl-5 break-words">
               <li>You understand we're NOT a law firm</li>
               <li>You'll get professional legal advice for anything serious</li>
               <li>You're responsible for your own decisions</li>
@@ -107,7 +107,7 @@ const Terms = () => {
             <p className="text-muted-foreground leading-relaxed mb-4">
               We use AI to:
             </p>
-            <ol className="space-y-2 text-muted-foreground list-decimal list-inside">
+            <ol className="space-y-2 text-muted-foreground list-decimal pl-5 break-words">
               <li>Read your contract (PDF, DOCX, or text)</li>
               <li>Look for common problem areas</li>
               <li>Give it a risk score (0-100)</li>

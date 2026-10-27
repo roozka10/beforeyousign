@@ -74,7 +74,7 @@ const Earnings = () => {
 
       <section className="bg-card rounded-3xl border border-border p-6 md:p-8 mb-6 shadow-card">
         <h2 className="text-lg font-semibold mb-4">Fastest path (recommended order)</h2>
-        <ol className="space-y-4 text-sm text-muted-foreground list-decimal list-inside">
+        <ol className="space-y-4 text-sm text-muted-foreground list-decimal pl-5 break-words">
           <li>
             <span className="text-foreground font-medium">Google AdSense</span> — already on the site. Open the dashboard, confirm beforeyousign.lol is approved, and turn on Auto ads.
           </li>

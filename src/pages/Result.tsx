@@ -146,7 +146,7 @@ const Result = () => {
   const fileName = storedResult?.fileName || "Contract.pdf";
 
   return (
-    <div className="min-h-screen px-6 py-8 md:py-10">
+    <div className="min-h-screen px-4 md:px-6 py-8 md:py-10">
       <div className="w-full max-w-6xl mx-auto animate-fade-up">
         {/* Top header */}
         <div className="flex items-center justify-between mb-6">
@@ -158,7 +158,7 @@ const Result = () => {
             />
             <span className="font-semibold text-lg tracking-tight">beforeyousign</span>
           </div>
-          <span className="text-xs md:text-sm text-muted-foreground font-mono tracking-tight">
+          <span className="text-xs md:text-sm text-muted-foreground font-mono tracking-tight truncate max-w-[55%]">
             {fileName}
           </span>
         </div>
