@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,6 +8,22 @@ import { ContractAnalysis } from "@/services/ai-lawyer";
 import { getContractResult, StoredContractResult } from "@/lib/supabase";
 import { AdUnit } from "@/components/monetization/AdUnit";
 import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
+
+// Fun celebration messages for great contracts (score 90+)
+const CELEBRATION_MESSAGES = [
+  {
+    title: "🏆 Certified human-readable!",
+    description: "This contract is surprisingly fair. Enjoy this rare moment.",
+  },
+  {
+    title: "🎉 No shady paragraph 17?",
+    description: "Whoever wrote this deserves a raise.",
+  },
+  {
+    title: "✨ 90+ and no red flags",
+    description: "Sign away, friend. You found a good one.",
+  },
+];
 
 const Result = () => {
   const navigate = useNavigate();
@@ -49,6 +66,12 @@ const Result = () => {
         keyIssues: result.keyIssues,
         simpleExplanation: result.simpleExplanation,
       });
+
+      // Fun feature: celebrate a great contract with a random message
+      if (result.overallScore >= 90) {
+        const msg = CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)];
+        toast.success(msg.title, { description: msg.description });
+      }
     } catch (err) {
       console.error("Failed to load result:", err);
       setError(
