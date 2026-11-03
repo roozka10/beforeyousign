@@ -14,10 +14,20 @@ import { preloadHumanVoice, unlockAudio } from "@/lib/human-voice";
  * All markup, styles and code here are original.
  */
 
+// Demo script for a sample house lease (shown on screen as "demo · house lease")
 const LINES = [
-  "ok so I read your lease.",
   "they can raise your rent with 7 days notice.",
   "ask for 60 days before you sign.",
+];
+
+/** Key widths per row, roughly a real laptop layout (function row is shorter). */
+const KEY_ROWS: number[][] = [
+  Array(14).fill(1),
+  [...Array(13).fill(1), 1.5],
+  [1.5, ...Array(12).fill(1), 1],
+  [1.8, ...Array(11).fill(1), 1.8],
+  [2.3, ...Array(10).fill(1), 2.3],
+  [1, 1, 1, 1.25, 5, 1.25, 1, 3],
 ];
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -100,7 +110,7 @@ export const LaptopScroll = () => {
   // ─── Talk when the lid is open ────────────────────────────────────────
   const talk = useCallback(() => {
     if (!sound) {
-      setCaption({ who: "orb", text: LINES.slice(1).join(" ") });
+      setCaption({ who: "orb", text: LINES.join(" ") });
       return;
     }
     speaker.speak(LINES, {
@@ -193,49 +203,106 @@ export const LaptopScroll = () => {
               className="absolute inset-0"
               style={{ transformOrigin: "50% 100%", transformStyle: "preserve-3d", transform: "rotateX(-87deg)" }}
             >
+              {/* Screen side: thin black bezel, notch, glass */}
               <div
-                className="absolute inset-0 rounded-[2.2%/3.4%] bg-[#0b0b0c] p-[1.6%]"
-                style={{ backfaceVisibility: "hidden", boxShadow: "0 0 0 1.5px #3a3a3e inset, 0 30px 80px -20px rgba(0,0,0,.7)" }}
+                className="absolute inset-0 rounded-[2.4%/3.6%] p-[1.3%] pt-[1.5%]"
+                style={{
+                  backfaceVisibility: "hidden",
+                  background: "#050506",
+                  boxShadow: "0 0 0 1.5px #5b5b61, 0 0 0 3px #1a1a1c, 0 40px 90px -30px rgba(0,0,0,.8)",
+                }}
               >
-                <div className="relative w-full h-full rounded-[1.2%/1.8%] overflow-hidden bg-background">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[14%] h-[3.2%] bg-[#0b0b0c] rounded-b-md z-10" />
-                  <div ref={screenRef} className="absolute inset-0 flex flex-col items-center justify-center gap-[4%] px-[8%] opacity-0">
-                    <TalkingOrb state={orbState} energyRef={speaker.energyRef} size={130} className="scale-[0.6] md:scale-100 -my-6 md:my-0" />
+                <div className="relative w-full h-full rounded-[1.4%/2.1%] overflow-hidden bg-background">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[13%] h-[3.4%] bg-[#050506] rounded-b-[8px] z-10 grid place-items-center">
+                    <span className="w-[6%] min-w-[4px] aspect-square rounded-full bg-[#1c2230] ring-1 ring-[#2a3242]" />
+                  </div>
+                  <div ref={screenRef} className="absolute inset-0 flex flex-col items-center justify-center gap-[3.5%] px-[8%] opacity-0">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-card/70 text-[9px] md:text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary" /> demo · house lease
+                    </span>
+                    <TalkingOrb state={orbState} energyRef={speaker.energyRef} size={120} className="scale-[0.55] md:scale-100 -my-6 md:my-0" />
                     <TypeCaption caption={caption} className="w-full min-h-[5.5em] [&_p:last-child]:text-sm md:[&_p:last-child]:text-xl" />
                   </div>
+                  {/* glass reflection */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: "linear-gradient(118deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 28%, transparent 42%)" }}
+                  />
                 </div>
               </div>
-              {/* Back of the lid */}
+
+              {/* Back of the lid: anodized aluminum */}
               <div
-                className="absolute inset-0 rounded-[2.2%/3.4%] grid place-items-center"
+                className="absolute inset-0 rounded-[2.4%/3.6%] grid place-items-center"
                 style={{
                   transform: "rotateX(180deg)",
                   backfaceVisibility: "hidden",
-                  background: "linear-gradient(160deg, #3b3b40, #26262a 60%, #1d1d20)",
-                  boxShadow: "0 0 0 1px #4a4a50 inset",
+                  background: "linear-gradient(165deg, #48484d 0%, #35353a 45%, #2a2a2e 100%)",
+                  boxShadow: "0 0 0 1px #5d5d63 inset, 0 0 0 1px #1a1a1c",
                 }}
               >
-                <div className="w-[9%] aspect-square rounded-full orb-body opacity-90" />
+                <div className="w-[8%] aspect-square rounded-full orb-body opacity-80 shadow-[0_0_24px_rgba(255,255,255,0.08)]" />
               </div>
             </div>
 
             {/* Base, lying flat and hinged at its top edge */}
             <div
-              className="absolute left-[-4%] right-[-4%] top-full h-full"
+              className="absolute left-0 right-0 top-full h-full"
               style={{
                 transformOrigin: "50% 0%",
                 transform: "rotateX(90deg)",
-                background: "linear-gradient(180deg, #2f2f33, #242427)",
-                borderRadius: "0 0 3% 3% / 0 0 6% 6%",
-                boxShadow: "0 0 0 1px #45454b inset",
+                transformStyle: "preserve-3d",
+                background: "linear-gradient(180deg, #3a3a3f 0%, #333338 40%, #2c2c30 100%)",
+                borderRadius: "0 0 4% 4% / 0 0 6% 6%",
+                boxShadow: "0 0 0 1px #56565c inset",
               }}
             >
-              <div className="absolute inset-x-[9%] top-[8%] h-[46%] grid grid-cols-[repeat(14,1fr)] grid-rows-5 gap-[0.6%]">
-                {Array.from({ length: 70 }).map((_, i) => (
-                  <span key={i} className="rounded-[2px] bg-[#151517]" />
+              {/* soft floor shadow */}
+              <div
+                className="absolute -inset-x-[6%] -bottom-[10%] top-[10%] rounded-[50%] pointer-events-none"
+                style={{ background: "radial-gradient(closest-side, rgba(0,0,0,0.55), transparent)", transform: "translateZ(-2px)", filter: "blur(8px)" }}
+              />
+              {/* hinge */}
+              <div className="absolute top-0 inset-x-[18%] h-[2.2%] rounded-b-md bg-[#1b1b1e]" />
+
+              {/* speaker grilles */}
+              {["left-[2.5%]", "right-[2.5%]"].map((side) => (
+                <div
+                  key={side}
+                  className={`absolute ${side} top-[7%] w-[7.5%] h-[47%] opacity-70`}
+                  style={{ backgroundImage: "radial-gradient(#141416 32%, transparent 36%)", backgroundSize: "6px 6px" }}
+                />
+              ))}
+
+              {/* keyboard well */}
+              <div className="absolute left-[12%] right-[12%] top-[6%] h-[49%] rounded-[1.5%] bg-[#1a1a1d] p-[0.8%] flex flex-col gap-[1.6%] shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+                {KEY_ROWS.map((row, r) => (
+                  <div key={r} className="flex gap-[0.7%]" style={{ flex: r === 0 ? 0.6 : 1 }}>
+                    {row.map((w, k) => (
+                      <span
+                        key={k}
+                        className="rounded-[3px] bg-[#0c0c0e] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                        style={{ flex: w }}
+                      />
+                    ))}
+                  </div>
                 ))}
               </div>
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-[9%] w-[36%] h-[28%] rounded-md bg-[#2a2a2e] shadow-[inset_0_0_0_1px_#45454b]" />
+
+              {/* trackpad */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-[60%] w-[42%] h-[33%] rounded-[3%/5%] bg-[#36363b] shadow-[inset_0_0_0_1px_#4a4a50,inset_0_1px_3px_rgba(0,0,0,0.35)]" />
+
+              {/* front edge (gives the base thickness) with thumb scoop */}
+              <div
+                className="absolute left-[0.6%] right-[0.6%] top-full h-[3.2%] rounded-b-[40%]"
+                style={{
+                  transformOrigin: "50% 0%",
+                  transform: "rotateX(-90deg)",
+                  background: "linear-gradient(180deg, #2a2a2e, #1c1c1f)",
+                }}
+              >
+                <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[14%] h-[55%] rounded-b-full bg-[#141416]" />
+              </div>
             </div>
           </div>
         </div>
