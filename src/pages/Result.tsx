@@ -11,9 +11,7 @@ import { useListener, useSpeaker } from "@/hooks/use-voice";
 import { getContractResult, type StoredContractResult } from "@/lib/supabase";
 import { decodeProblem, SEVERITY_META, type Problem } from "@/lib/problems";
 import { askAboutDocument, MAX_QUESTION_CHARS, type ChatTurn } from "@/services/ai-lawyer";
-import { AdUnit } from "@/components/monetization/AdUnit";
 import { preloadHumanVoice, unlockAudio } from "@/lib/human-voice";
-import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
 const CELEBRATIONS = [
   { title: "🏆 Certified human-readable!", description: "This one's surprisingly fair. Enjoy the rare moment." },
@@ -385,20 +383,6 @@ const Result = () => {
           </div>
         </section>
 
-        <div className="mb-8">
-          <AdUnit format="horizontal" />
-        </div>
-
-        <AffiliatePartners
-          title={stored.riskLevel === "high" ? "This one looks risky — get backup" : "Before you sign, consider these tools"}
-          subtitle={
-            stored.riskLevel === "high"
-              ? "High-risk docs are worth a second look from a real attorney."
-              : "Extra protection for subscriptions, legal review, and safe e-signatures."
-          }
-          compact
-          className="mb-8"
-        />
       </div>
     </div>
   );
