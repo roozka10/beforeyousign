@@ -9,7 +9,7 @@ export async function analyzeContractWithContext(
   apiKey: string
 ): Promise<ContractAnalysis> {
   if (!contractText || contractText.trim().length === 0) {
-    throw new Error("Contract text is empty. Please upload a valid PDF or document.");
+    throw new Error("That file looks empty — try a different one.");
   }
 
   if (!apiKey) {

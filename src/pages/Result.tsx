@@ -1,164 +1,217 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { AlertCircle, Keyboard, Mic, RotateCcw, Square, Volume2, VolumeX, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ContractAnalysis } from "@/services/ai-lawyer";
-import { getContractResult, StoredContractResult } from "@/lib/supabase";
+import { TalkingOrb, type OrbState } from "@/components/TalkingOrb";
+import { TypeCaption, type Caption } from "@/components/TypeCaption";
+import { ColorPicker } from "@/components/ColorPicker";
+import { useListener, useSpeaker } from "@/hooks/use-voice";
+import { getContractResult, type StoredContractResult } from "@/lib/supabase";
+import { decodeProblem, SEVERITY_META, type Problem } from "@/lib/problems";
+import { askAboutDocument, MAX_QUESTION_CHARS, type ChatTurn } from "@/services/ai-lawyer";
 import { AdUnit } from "@/components/monetization/AdUnit";
 import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
-// Fun celebration messages for great contracts (score 90+)
-const CELEBRATION_MESSAGES = [
-  {
-    title: "🏆 Certified human-readable!",
-    description: "This contract is surprisingly fair. Enjoy this rare moment.",
-  },
-  {
-    title: "🎉 No shady paragraph 17?",
-    description: "Whoever wrote this deserves a raise.",
-  },
-  {
-    title: "✨ 90+ and no red flags",
-    description: "Sign away, friend. You found a good one.",
-  },
+const CELEBRATIONS = [
+  { title: "🏆 Certified human-readable!", description: "This one's surprisingly fair. Enjoy the rare moment." },
+  { title: "🎉 No shady paragraph 17?", description: "Whoever wrote this deserves a raise." },
+  { title: "✨ 90+ and no red flags", description: "You found a good one." },
 ];
+
+interface Loaded {
+  stored: StoredContractResult;
+  problems: Problem[];
+  documentType: string;
+}
 
 const Result = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
-  const [storedResult, setStoredResult] = useState<StoredContractResult | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [data, setData] = useState<Loaded | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load result from Supabase
+  const speaker = useSpeaker();
+  const [caption, setCaption] = useState<Caption>({ who: "orb", text: "" });
+  const [activeLine, setActiveLine] = useState(-1);
+  const [asking, setAsking] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [draft, setDraft] = useState("");
+  const historyRef = useRef<ChatTurn[]>([]);
+
+  // ─── Load ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!id) {
-      setError("No contract ID provided");
+      setError("No document ID provided");
       setLoading(false);
       return;
     }
-
-    loadResult(id);
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await getContractResult(id);
+        if (cancelled) return;
+        if (!stored) {
+          setError("Couldn't find that document");
+          return;
+        }
+        const problems = (stored.keyIssues ?? []).map(decodeProblem).filter((p) => p.comment);
+        setData({ stored, problems, documentType: stored.documentType || "document" });
+        setCaption({
+          who: "orb",
+          text: problems.length
+            ? `found ${problems.length} red flag${problems.length === 1 ? "" : "s"}. tap replay to hear them 👇`
+            : "no red flags found ✨ tap replay to hear the vibe check",
+        });
+        if (stored.overallScore >= 90) {
+          const msg = CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)];
+          toast.success(msg.title, { description: msg.description });
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load result");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
-  const loadResult = async (resultId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await getContractResult(resultId);
+  // ─── Spoken script: intro → each problem → vibe check → invite questions ─
+  const script = useMemo(() => {
+    if (!data) return [];
+    const n = data.problems.length;
+    const intro =
+      n === 0
+        ? `okay I read your ${data.documentType}. honestly? no red flags.`
+        : `okay I read your ${data.documentType}. found ${n} ${n === 1 ? "thing" : "things"} you need to know.`;
+    return [
+      intro,
+      ...data.problems.map((p) => p.comment),
+      data.stored.simpleExplanation,
+      "got questions? tap the mic and ask me anything about it.",
+    ];
+  }, [data]);
 
-      if (!result) {
-        setError("Contract not found");
-        setLoading(false);
-        return;
-      }
-
-      setStoredResult(result);
-      setAnalysis({
-        overallScore: result.overallScore,
-        clarity: result.clarity,
-        fairness: result.fairness,
-        riskLevel: result.riskLevel,
-        keyIssues: result.keyIssues,
-        simpleExplanation: result.simpleExplanation,
+  const say = useCallback(
+    (lines: string[], trackProblems = false) => {
+      return speaker.speak(lines, {
+        onLine: (i) => {
+          if (trackProblems) setActiveLine(i);
+          if (i >= 0) setCaption({ who: "orb", text: lines[i] });
+        },
       });
+    },
+    [speaker]
+  );
 
-      // Fun feature: celebrate a great contract with a random message
-      if (result.overallScore >= 90) {
-        const msg = CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)];
-        toast.success(msg.title, { description: msg.description });
-      }
-    } catch (err) {
-      console.error("Failed to load result:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load contract result. Please try again."
-      );
-    } finally {
-      setLoading(false);
+  const playBreakdown = useCallback(() => {
+    if (!script.length) return;
+    if (!speaker.supported || speaker.muted) {
+      setCaption({ who: "orb", text: script.slice(1, -1).join("  ") });
+      return;
     }
-  };
+    say(script, true);
+  }, [say, script, speaker.supported, speaker.muted]);
 
-  // Animate score when analysis loads
+  // Auto-start right after an upload (?talk=1) — the drop/click counts as the user gesture.
   useEffect(() => {
-    if (!analysis) return;
+    if (!data || params.get("talk") !== "1") return;
+    params.delete("talk");
+    setParams(params, { replace: true });
+    const t = setTimeout(playBreakdown, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
-    let raf: number;
-    const start = performance.now();
-    const duration = 1100;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setAnimatedScore(Math.round(eased * analysis.overallScore));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [analysis]);
+  // ─── Questions ─────────────────────────────────────────────────────────
+  const ask = useCallback(
+    async (raw: string) => {
+      const q = raw.trim().slice(0, MAX_QUESTION_CHARS);
+      if (!q || !data || asking) return;
+      speaker.stop();
+      setActiveLine(-1);
+      setCaption({ who: "you", text: q, live: true });
+      setAsking(true);
+      try {
+        const answer = await askAboutDocument(
+          q,
+          data.stored.contractText ?? "",
+          { documentType: data.documentType, problems: data.problems, vibeCheck: data.stored.simpleExplanation },
+          historyRef.current,
+          import.meta.env.VITE_OPENROUTER_API_KEY
+        );
+        historyRef.current = [...historyRef.current, { role: "user", content: q }, { role: "assistant", content: answer }];
+        setCaption({ who: "orb", text: answer });
+        say([answer]);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Couldn't answer that, try again");
+        setCaption({ who: "orb", text: "oops, my brain glitched. try asking again 🙏" });
+      } finally {
+        setAsking(false);
+      }
+    },
+    [asking, data, say, speaker]
+  );
 
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case "low":
-        return "success";
-      case "medium":
-        return "warning";
-      case "high":
-        return "danger";
-      default:
-        return "warning";
+  const listener = useListener((text) => ask(text));
+
+  // Show what you're saying live, so you know it understood you
+  useEffect(() => {
+    if (listener.listening) {
+      setCaption({ who: "you", text: listener.interim || "listening…", live: true });
+    } else {
+      // Mic closed without hearing anything
+      setCaption((c) =>
+        c.who === "you" && c.text === "listening…"
+          ? { who: "orb", text: "didn't catch that 👂 tap the mic and try again" }
+          : c
+      );
     }
+  }, [listener.listening, listener.interim]);
+
+  const toggleMic = () => {
+    if (listener.listening) return listener.stop();
+    speaker.stop();
+    setActiveLine(-1);
+    listener.start();
   };
 
-  const getRiskBg = (level: string) => {
-    switch (level) {
-      case "low":
-        return "bg-success/10";
-      case "medium":
-        return "bg-warning/10";
-      case "high":
-        return "bg-danger/10";
-      default:
-        return "bg-warning/10";
-    }
-  };
+  const orbState: OrbState = listener.listening
+    ? "listening"
+    : asking
+      ? "thinking"
+      : speaker.speaking
+        ? "talking"
+        : "idle";
 
-  // Loading state
+  // ─── States ────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="min-h-screen grid place-items-center px-6">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading contract analysis...</p>
+          <TalkingOrb state="thinking" size={110} className="mx-auto mb-6" />
+          <p className="text-muted-foreground">pulling up your doc…</p>
         </div>
       </div>
     );
   }
 
-  // Error state
-  if (error || !analysis) {
+  if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="min-h-screen grid place-items-center px-6">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold mb-3">Oops!</h2>
-          <p className="text-muted-foreground mb-8">{error || "No analysis available"}</p>
-          <div className="flex gap-3 flex-col sm:flex-row">
-            <Button
-              onClick={() => navigate("/dashboard")}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Back to Dashboard
-            </Button>
-            <Button
-              onClick={() => navigate("/upload")}
-              variant="outline"
-            >
-              Upload Another
+          <h2 className="text-2xl font-semibold mb-3">Oops</h2>
+          <p className="text-muted-foreground mb-8">{error || "Nothing to show"}</p>
+          <div className="flex gap-3 flex-col sm:flex-row justify-center">
+            <Button onClick={() => navigate("/dashboard")}>Back to dashboard</Button>
+            <Button onClick={() => navigate("/upload")} variant="outline">
+              Upload another
             </Button>
           </div>
         </div>
@@ -166,167 +219,199 @@ const Result = () => {
     );
   }
 
-  const fileName = storedResult?.fileName || "Contract.pdf";
+  const { stored, problems, documentType } = data;
+  const activeProblem = activeLine >= 1 && activeLine <= problems.length ? activeLine - 1 : -1;
 
   return (
-    <div className="min-h-screen px-4 md:px-6 py-8 md:py-10">
-      <div className="w-full max-w-6xl mx-auto animate-fade-up">
-        {/* Top header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2.5">
-            <img
-              src="/logo.png"
-              alt="beforeyousign"
-              className="w-9 h-9 object-contain"
-            />
-            <span className="font-semibold text-lg tracking-tight">beforeyousign</span>
+    <div className="min-h-screen px-4 md:px-8 py-5 md:py-8">
+      <div className="w-full max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{documentType}</p>
+            <h1 className="text-base font-semibold truncate">{stored.fileName}</h1>
           </div>
-          <span className="text-xs md:text-sm text-muted-foreground font-mono tracking-tight truncate max-w-[55%]">
-            {fileName}
-          </span>
+          <Button variant="secondary" size="sm" onClick={() => navigate("/upload")} className="rounded-xl shrink-0">
+            New doc
+          </Button>
         </div>
 
-        {/* Top row: score card (left) + ratings (right) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          {/* Overall Score Card */}
-          <div className="relative bg-card rounded-3xl border border-border p-6 overflow-hidden">
-            <div className={cn("absolute -right-6 -top-6 w-40 h-40 rounded-full blur-3xl", getRiskBg(analysis.riskLevel))} />
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-background border border-border grid place-items-center mb-6">
-                <FileText className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div className="flex items-baseline gap-1 mb-4">
-                <span
-                  className={cn(
-                    "text-6xl md:text-7xl leading-none font-serif italic tabular-nums",
-                    getRiskColor(analysis.riskLevel) === "success" && "text-success",
-                    getRiskColor(analysis.riskLevel) === "warning" && "text-warning",
-                    getRiskColor(analysis.riskLevel) === "danger" && "text-danger"
-                  )}
-                >
-                  {animatedScore}
-                </span>
-                <span className="text-sm text-muted-foreground">/100</span>
-              </div>
-              <div
+        {/* ─── Stage: big orb → typing captions → mic ─── */}
+        <section className="min-h-[calc(100dvh-9rem)] md:min-h-[calc(100dvh-7rem)] flex flex-col items-center justify-center py-8 animate-fade-up">
+          <TalkingOrb state={orbState} energyRef={speaker.energyRef} size={260} className="scale-[0.8] md:scale-100 -my-6 md:my-0" />
+
+          <TypeCaption caption={caption} className="mt-10 md:mt-12 min-h-[7.5rem] w-full max-w-lg px-2" />
+          {asking && <p className="text-sm text-muted-foreground -mt-4 mb-2 animate-pulse">thinking…</p>}
+
+          {/* Controls */}
+          <div className="mt-6 flex items-center justify-center gap-5">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={speaker.speaking ? speaker.stop : playBreakdown}
+              className="rounded-full h-12 w-12"
+              aria-label={speaker.speaking ? "Stop talking" : "Replay the red flags"}
+            >
+              {speaker.speaking ? <Square className="w-4 h-4" /> : <RotateCcw className="w-5 h-5" />}
+            </Button>
+
+            {listener.supported ? (
+              <button
+                type="button"
+                onClick={toggleMic}
+                disabled={asking}
+                aria-label={listener.listening ? "Stop listening" : "Tap to ask a question"}
+                aria-pressed={listener.listening}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium capitalize",
-                  getRiskColor(analysis.riskLevel) === "success" && "bg-success/10 text-success",
-                  getRiskColor(analysis.riskLevel) === "warning" && "bg-warning/10 text-warning",
-                  getRiskColor(analysis.riskLevel) === "danger" && "bg-danger/10 text-danger"
+                  "relative h-20 w-20 rounded-full grid place-items-center text-primary-foreground bg-primary shadow-glow",
+                  "transition-transform duration-150 hover:scale-105 active:scale-95 disabled:opacity-50",
+                  "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/40"
                 )}
               >
-                <span
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full",
-                    getRiskColor(analysis.riskLevel) === "success" && "bg-success",
-                    getRiskColor(analysis.riskLevel) === "warning" && "bg-warning",
-                    getRiskColor(analysis.riskLevel) === "danger" && "bg-danger"
-                  )}
-                />
-                {analysis.riskLevel} risk
-              </div>
-            </div>
+                {listener.listening && <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-40" />}
+                {listener.listening ? <Square className="w-6 h-6 relative" fill="currentColor" /> : <Mic className="w-8 h-8 relative" />}
+              </button>
+            ) : (
+              <Button onClick={() => setTyping(true)} className="h-14 rounded-full px-6 shadow-glow">
+                <Keyboard className="w-5 h-5" /> Ask
+              </Button>
+            )}
+
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={speaker.toggleMute}
+              className="rounded-full h-12 w-12"
+              aria-label={speaker.muted ? "Unmute voice" : "Mute voice"}
+              aria-pressed={speaker.muted}
+            >
+              {speaker.muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </Button>
           </div>
 
-          {/* Ratings */}
-          <div className="md:col-span-2 bg-card rounded-3xl border border-border p-6 md:p-8">
-            <h2 className="text-xl font-semibold mb-6">What you're dealing with</h2>
-            <div className="space-y-4">
-              <RatingRow label="Clarity" value={analysis.clarity} />
-              <RatingRow label="Fairness" value={analysis.fairness} />
-            </div>
-          </div>
-        </div>
-
-        {/* Key Issues Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
-          {analysis.keyIssues.map((issue, idx) => (
-            <div key={idx} className="bg-card rounded-3xl border border-border p-6 md:p-8">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-6 h-6 rounded-full bg-danger/20 flex items-center justify-center text-danger text-xs font-bold">
-                  {idx + 1}
-                </span>
-                <span className="text-xs uppercase tracking-widest text-danger font-medium">Important</span>
-              </div>
-              <p className="text-base font-medium leading-relaxed">{issue}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Main Explanation */}
-        <div className="bg-card rounded-3xl border border-border p-6 md:p-8 mb-5">
-          <div className="flex items-start gap-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-            <h2 className="text-2xl md:text-3xl font-semibold">What this means for you</h2>
-          </div>
-          <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-            {analysis.simpleExplanation}
+          <p className="mt-4 text-xs text-muted-foreground">
+            {listener.listening ? "tap again when you're done" : "tap the mic to ask about your doc"}
+            {listener.supported && !typing && (
+              <>
+                {" · "}
+                <button type="button" onClick={() => setTyping(true)} className="underline underline-offset-2 hover:text-foreground">
+                  type instead
+                </button>
+              </>
+            )}
           </p>
-        </div>
 
-        <div className="my-8">
+          {typing && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                ask(draft);
+                setDraft("");
+              }}
+              className="mt-4 w-full max-w-md flex items-center gap-2 rounded-2xl border border-border bg-card p-1.5 focus-within:border-primary/50 animate-fade-in"
+            >
+              <input
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                maxLength={MAX_QUESTION_CHARS}
+                placeholder={`ask about your ${documentType}…`}
+                aria-label="Your question"
+                className="flex-1 min-w-0 bg-transparent px-3 py-2 text-base outline-none placeholder:text-muted-foreground"
+              />
+              <Button type="submit" size="icon" disabled={!draft.trim() || asking} className="rounded-xl h-10 w-10" aria-label="Send question">
+                <ArrowUp className="w-4 h-4" />
+              </Button>
+            </form>
+          )}
+
+          <ColorPicker className="mt-8 scale-90" />
+        </section>
+
+        {/* ─── Read it instead ─── */}
+        <section className="bezel mb-8">
+          <div className="bezel-inner p-5 md:p-7">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold">{problems.length ? "All the red flags" : "No red flags"}</h2>
+              <div className="flex gap-3 text-xs text-muted-foreground tabular-nums">
+                <Score label="score" value={stored.overallScore} />
+                <Score label="clarity" value={stored.clarity} />
+                <Score label="fair" value={stored.fairness} />
+              </div>
+            </div>
+
+            {problems.length === 0 && (
+              <p className="text-muted-foreground">Nothing sketchy jumped out. Still skim it before you sign 🫡</p>
+            )}
+
+            <ul className="space-y-1">
+              {problems.map((p, i) => (
+                <CommentRow key={i} problem={p} active={activeProblem === i} />
+              ))}
+            </ul>
+
+            <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
+              <p className="font-hand text-xl text-primary leading-none mb-1.5">vibe check</p>
+              <p className="font-medium">{stored.simpleExplanation}</p>
+            </div>
+          </div>
+        </section>
+
+        <div className="mb-8">
           <AdUnit format="horizontal" />
         </div>
 
         <AffiliatePartners
-          title={analysis.riskLevel === "high" ? "This contract looks risky — get backup" : "Before you sign, consider these tools"}
+          title={stored.riskLevel === "high" ? "This one looks risky — get backup" : "Before you sign, consider these tools"}
           subtitle={
-            analysis.riskLevel === "high"
-              ? "High-risk contracts are worth a second look from a real attorney or secure signing tool."
+            stored.riskLevel === "high"
+              ? "High-risk docs are worth a second look from a real attorney."
               : "Extra protection for subscriptions, legal review, and safe e-signatures."
           }
           compact
           className="mb-8"
         />
-
-        {/* Bottom action bar */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={() => navigate("/dashboard")}
-            size="lg"
-            className="flex-1 h-14 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium text-base shadow-glow transition-smooth"
-          >
-            Got it, next contract
-          </Button>
-          <Button
-            onClick={() => navigate("/upload")}
-            variant="secondary"
-            size="lg"
-            className="h-14 px-8 rounded-2xl bg-card hover:bg-accent border border-border font-medium transition-smooth"
-          >
-            Check another
-          </Button>
-        </div>
       </div>
     </div>
   );
 };
 
-const RatingRow = ({ label, value }: { label: string; value: number }) => {
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setW(value));
-    return () => cancelAnimationFrame(id);
-  }, [value]);
-
-  const getToneColor = (v: number) => {
-    if (v >= 70) return "bg-success";
-    if (v >= 50) return "bg-warning";
-    return "bg-danger";
-  };
-
+const CommentRow = ({ problem, active }: { problem: Problem; active: boolean }) => {
+  const meta = SEVERITY_META[problem.severity];
   return (
-    <div className="grid grid-cols-[80px_1fr_50px] items-center gap-4">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="h-2.5 rounded-full bg-background overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-[width] duration-1000 ease-out", getToneColor(value))}
-          style={{ width: `${w}%` }}
-        />
+    <li className={cn("flex gap-3 rounded-2xl p-3 -mx-3 transition-colors duration-300", active && "bg-primary/10")}>
+      <div className="w-9 h-9 shrink-0 rounded-full orb-body" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 text-[13px] mb-0.5">
+          <span className="font-semibold">beforeyousign</span>
+          <span
+            className={cn(
+              "px-1.5 py-0.5 rounded-md text-[11px] font-medium",
+              problem.severity === "high" && "bg-danger/15 text-danger",
+              problem.severity === "medium" && "bg-warning/15 text-warning",
+              problem.severity === "low" && "bg-muted text-muted-foreground"
+            )}
+          >
+            {meta.emoji} {meta.label}
+          </span>
+        </div>
+        <p className="text-[15px] md:text-base leading-relaxed">{problem.comment}</p>
+        {problem.quote && (
+          <p className="mt-1.5 text-sm text-muted-foreground border-l-2 border-border pl-2.5 italic break-words">
+            “{problem.quote}”
+          </p>
+        )}
       </div>
-      <span className="text-sm font-medium tabular-nums text-right">{value}</span>
-    </div>
+    </li>
+  );
+};
+
+const Score = ({ label, value }: { label: string; value: number }) => {
+  const tone = value >= 70 ? "text-success" : value >= 50 ? "text-warning" : "text-danger";
+  return (
+    <span>
+      <span className={cn("font-semibold text-sm", tone)}>{value}</span> {label}
+    </span>
   );
 };
 

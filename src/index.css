@@ -136,3 +136,76 @@
     overflow-x: hidden;
   }
 }
+
+/* ─── Talking orb ──────────────────────────────────────────────────────── */
+/* Hue/saturation come from the user's chosen color (useOrbColor). */
+:root {
+  --orb-h: 17;
+  --orb-s: 85%;
+  --orb-ink: 20 35% 16%;
+}
+.orb-body {
+  background:
+    radial-gradient(circle at 32% 26%, hsl(var(--orb-h) var(--orb-s) 82%) 0%, hsl(var(--orb-h) var(--orb-s) 66%) 38%, hsl(var(--orb-h) var(--orb-s) 56%) 72%, hsl(var(--orb-h) var(--orb-s) 48%) 100%);
+  box-shadow:
+    inset -8px -10px 24px hsl(var(--orb-h) var(--orb-s) 30% / 0.35),
+    0 18px 40px -18px hsl(var(--orb-h) var(--orb-s) 50% / 0.8);
+}
+.orb-shine {
+  background: radial-gradient(ellipse 30% 18% at 33% 20%, hsl(0 0% 100% / 0.7), transparent 70%);
+}
+.orb-glow { background: radial-gradient(circle, hsl(var(--orb-h) var(--orb-s) 60% / 0.55), transparent 65%); }
+.orb-blush { background: hsl(350 90% 75% / 0.55); filter: blur(3px); }
+.orb-ripple { border-color: hsl(var(--orb-h) var(--orb-s) 60% / 0.6); }
+.orb-ring {
+  background: conic-gradient(from 0deg, transparent 0 60%, hsl(var(--orb-h) var(--orb-s) 60%) 85%, hsl(var(--orb-h) var(--orb-s) 82%) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: orbSpin 1.1s linear infinite;
+}
+.orb-eye { animation: orbBlink 4.5s infinite; transform-origin: center; }
+.orb-eyes-think { animation: orbLook 1.6s ease-in-out infinite; }
+.orb-ripple { animation: orbRipple 1.5s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+
+@keyframes orbSpin { to { transform: rotate(360deg); } }
+@keyframes orbBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes orbLook {
+  0%, 100% { transform: translate(-50%, -50%) translateX(-10%); }
+  50% { transform: translate(-50%, -50%) translateX(10%); }
+}
+@keyframes orbRipple {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(1.55); opacity: 0; }
+}
+
+/* ─── Borrowed from datafa.st's visual language ───────────────────────── */
+/* "Bezel" card: thin outer frame with an inner card */
+.bezel {
+  border-radius: 1.6rem;
+  padding: 6px;
+  background: hsl(0 0% 100% / 0.035);
+  box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.06), 0 2px 8px -2px hsl(0 0% 0% / 0.4);
+}
+.bezel > .bezel-inner {
+  border-radius: calc(1.6rem - 6px);
+  background: hsl(var(--card));
+  box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.05);
+}
+/* Highlighter-marker emphasis */
+.marker {
+  background: linear-gradient(transparent 12%, hsl(var(--primary) / 0.28) 12%, hsl(var(--primary) / 0.28) 88%, transparent 88%);
+  padding: 0 0.25em;
+  border-radius: 0.2em;
+  color: hsl(var(--foreground));
+}
+/* Handwritten annotation */
+.font-hand { font-family: "Caveat", "Comic Sans MS", cursive; }
+
+/* Live feed marquee */
+@keyframes feedScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+.animate-feed { animation: feedScroll 28s linear infinite; }
+.animate-feed:hover { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-ring, .orb-eye, .orb-eyes-think, .orb-ripple, .animate-feed { animation: none !important; }
+}

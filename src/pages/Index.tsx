@@ -8,14 +8,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Upload,
-  ScanSearch,
-  FileCheck2,
-  AlertTriangle,
-  Sparkles,
-  ArrowRight,
-} from "lucide-react";
+import { AlertTriangle, Sparkles, ArrowRight, Volume2 } from "lucide-react";
+import { TalkingOrb } from "@/components/TalkingOrb";
+import { ColorPicker } from "@/components/ColorPicker";
+import { useSpeaker } from "@/hooks/use-voice";
 import { AdUnit } from "@/components/monetization/AdUnit";
 import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
@@ -26,8 +22,42 @@ const sections = [
   { id: "faq", label: "FAQ" },
 ];
 
+// Sample comments for the landing-page feed (illustrative, not real users' docs)
+const SAMPLE_COMMENTS = [
+  { doc: "apartment lease", flag: "🚩", text: "bestie they keep your whole deposit for \"normal wear\" — that's literally just living there 💀" },
+  { doc: "job offer", flag: "👀", text: "lowkey sus: \"other duties as assigned\" means they can make you do literally anything" },
+  { doc: "gym membership", flag: "🚩", text: "auto-renews every year and you can only cancel by mail. it's giving 2003" },
+  { doc: "freelance contract", flag: "🚩", text: "they own everything you make, even stuff you made before the gig. no cap, push back" },
+  { doc: "NDA", flag: "👀", text: "this NDA lasts forever. like, forever forever. ask for 2 years max" },
+  { doc: "app's terms", flag: "👀", text: "you can't sue them, only do private arbitration. translation: you lose your day in court" },
+  { doc: "phone plan", flag: "🤏", text: "$4.99 \"admin fee\" every month that's not in the ad price. small but the audacity" },
+  { doc: "internship offer", flag: "🚩", text: "unpaid, 40 hrs a week, and a non-compete?? that's three red flags in a trench coat" },
+];
+
+const STEPS = [
+  {
+    title: "Drop any doc",
+    body: "Lease, job offer, NDA, terms, bills. PDF, Word, text — throw it on the orb.",
+  },
+  {
+    title: "It finds only the problems",
+    body: "No 10-page summary. Just the stuff that could cost you money, freedom, or sleep.",
+  },
+  {
+    title: "It tells you out loud",
+    body: "The orb says every red flag like a TikTok comment — then you ask it anything about your doc.",
+  },
+];
+
+const DEMO_LINES = [
+  "hey bestie, I'm the orb.",
+  "drop any document on me and I'll tell you only the red flags, no boring stuff.",
+  "then ask me anything about it. I got you.",
+];
+
 const Index = () => {
   const navigate = useNavigate();
+  const speaker = useSpeaker();
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("bys_user_id");
@@ -90,16 +120,16 @@ const Index = () => {
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/60 text-xs text-muted-foreground mb-5 md:mb-6">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            Risk-first contract analysis
+            Drop any doc. Hear the red flags.
           </div>
           <h1 className="text-4xl md:text-7xl font-semibold tracking-tight mb-5 md:mb-6 leading-[1.08] md:leading-[1.05]">
-            Discover what could{" "}
+            Find what could{" "}
             <span className="font-serif italic text-primary">screw you</span>{" "}
-            in a contract
+            in the fine print
           </h1>
           <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 md:mb-10">
-            So you can avoid costly mistakes, fast. No legal jargon — just the
-            stuff that actually matters.
+            A talking orange orb reads the fine print, says <span className="marker">only the problems</span>{" "}
+            out loud in plain Gen Z English, then answers your questions.
           </p>
           <Link to="/login">
             <Button
@@ -111,22 +141,57 @@ const Index = () => {
             </Button>
           </Link>
           <p className="text-xs text-muted-foreground mt-4">
-            No card. Drop a contract, get the truth in seconds.
+            Free · no card · works with PDF, Word, and text
           </p>
         </div>
 
-        {/* Demo video */}
-        <div className="max-w-5xl mx-auto mt-10 md:mt-16 animate-fade-up">
-          <div className="relative rounded-2xl md:rounded-3xl border border-border bg-card overflow-hidden shadow-elevated">
-            <div className="absolute -inset-px rounded-2xl md:rounded-3xl bg-gradient-to-b from-primary/20 to-transparent pointer-events-none" />
-            <video
-              src="/beforeyousigndemo.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-auto block"
-            />
+        {/* Orb + live comment feed */}
+        <div className="max-w-5xl mx-auto mt-12 md:mt-20 animate-fade-up">
+          <div className="bezel">
+            <div className="bezel-inner grid md:grid-cols-[1fr_1.2fr] gap-8 md:gap-4 p-6 md:p-10 items-center overflow-hidden">
+              <div className="flex flex-col items-center text-center">
+                <button
+                  type="button"
+                  onClick={() => (speaker.speaking ? speaker.stop() : speaker.speak(DEMO_LINES))}
+                  aria-label="Hear the orb talk"
+                  className="rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/50"
+                >
+                  <TalkingOrb state={speaker.speaking ? "talking" : "idle"} energyRef={speaker.energyRef} size={180} />
+                </button>
+                <p className="font-hand text-2xl text-primary mt-6 -rotate-2">hi, I read the fine print 👋</p>
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <Volume2 className="w-3.5 h-3.5" /> tap me — I talk, free in your browser
+                </p>
+                <ColorPicker className="mt-4" />
+              </div>
+
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 mb-2 text-xs text-muted-foreground px-2.5 py-1 rounded-full border border-border">
+                  <span className="relative flex w-2 h-2">
+                    <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-75" />
+                    <span className="relative w-2 h-2 rounded-full bg-primary" />
+                  </span>
+                  example red flags
+                </div>
+              <div className="relative h-[320px] overflow-hidden [mask-image:linear-gradient(transparent,#000_10%,#000_90%,transparent)]">
+                <ul className="animate-feed space-y-3 pt-4">
+                  {[...SAMPLE_COMMENTS, ...SAMPLE_COMMENTS].map((c, i) => (
+                    <li key={i} aria-hidden={i >= SAMPLE_COMMENTS.length} className="flex gap-3 rounded-2xl bg-background/50 border border-border p-3.5 text-left">
+                      <div className="w-8 h-8 shrink-0 rounded-full orb-body" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                          <span className="font-semibold text-foreground">beforeyousign</span> · on {/^[aeiou]/i.test(c.doc) ? "an" : "a"} {c.doc}
+                        </p>
+                        <p className="text-sm leading-relaxed">
+                          {c.flag} {c.text}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -247,47 +312,21 @@ const Index = () => {
               🧠 How it works
             </div>
             <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4 md:mb-5">
-              So we read it for you
+              So we read it <span className="font-serif italic text-primary">and say it</span> for you
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              {
-                icon: Upload,
-                step: "01",
-                title: "Drop your contract",
-                body: "PDF, DOCX, whatever you've got.",
-              },
-              {
-                icon: ScanSearch,
-                step: "02",
-                title: "We scan it",
-                body: "Looking for weird, risky, or unfair stuff.",
-              },
-              {
-                icon: FileCheck2,
-                step: "03",
-                title: "You get the truth",
-                body: "No legal talk. Just a simple explanation.",
-              },
-            ].map(({ icon: Icon, step, title, body }) => (
-              <div
-                key={step}
-                className="relative p-6 rounded-2xl border border-border bg-card hover:bg-card/80 transition-smooth"
-              >
-                <span className="absolute top-5 right-5 text-xs font-mono text-muted-foreground">
-                  {step}
-                </span>
-                <div className="w-11 h-11 rounded-xl bg-primary/10 grid place-items-center mb-5">
-                  <Icon className="w-5 h-5 text-primary" />
+          <div className="bezel">
+            <div className="bezel-inner grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+              {STEPS.map((step, i) => (
+                <div key={step.title} className="p-6 md:p-8">
+                  <p className="text-lg font-semibold mb-2">
+                    <span className="text-primary">{i + 1}.</span> {step.title}
+                  </p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{step.body}</p>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {body}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <div className="text-center mt-12">
@@ -342,7 +381,7 @@ const Index = () => {
               },
               {
                 q: "What kind of contracts work?",
-                a: "Pretty much anything with text. Job offers, freelance contracts, NDAs, random PDFs someone emailed you…",
+                a: "Pretty much anything with text. Leases, job offers, freelance contracts, NDAs, app terms, bills — PDF, Word, TXT, RTF, HTML, Markdown.",
               },
               {
                 q: "What if my contract is super long?",
@@ -351,6 +390,14 @@ const Index = () => {
               {
                 q: "Do I need to understand legal stuff to use this?",
                 a: "Nope. That's the whole point. We translate everything into normal human language.",
+              },
+              {
+                q: "Does the voice cost money?",
+                a: "Nope. The orb uses the voice built into your browser, so it's free. Works best in Chrome, Safari, and Edge.",
+              },
+              {
+                q: "Can I ask it questions?",
+                a: "Yep — type or tap the mic. It only answers stuff about your doc, so it stays on topic and doesn't make things up.",
               },
               {
                 q: "How fast is it?",

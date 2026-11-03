@@ -11,7 +11,7 @@ const items = [
 
 export const Sidebar = () => {
   const location = useLocation();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<{ location: string } | null>(null);
 
   useEffect(() => {
     const updateProfile = () => {

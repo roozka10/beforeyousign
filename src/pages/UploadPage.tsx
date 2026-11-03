@@ -1,215 +1,186 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { TalkingOrb, type OrbState } from "@/components/TalkingOrb";
+import { ColorPicker } from "@/components/ColorPicker";
 import { analyzeContractWithContext } from "@/lib/contract-analysis-helper";
 import { saveContractResult, supabase } from "@/lib/supabase";
-import { extractTextFromFile } from "@/lib/pdf-extractor";
-import { toast } from "sonner";
+import { ACCEPTED_FILE_TYPES, extractTextFromFile } from "@/lib/pdf-extractor";
+import { encodeProblem } from "@/lib/problems";
 import type { UserContext } from "@/services/ai-lawyer";
-import { AdUnit } from "@/components/monetization/AdUnit";
 
-const loadingMessages = [
-  "Reading your contract…",
-  "Looking for sketchy stuff…",
-  "Scoring your deal…",
-  "Almost there…",
+const THINKING_LINES = [
+  "reading every single line so you don't have to…",
+  "hunting for sus clauses 🔍",
+  "checking the fine print they hoped you'd skip…",
+  "writing your red flags rn ✍️",
 ];
 
 const UploadPage = () => {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<OrbState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [msgIndex, setMsgIndex] = useState(0);
-  const [dragOver, setDragOver] = useState(false);
+  const [fileName, setFileName] = useState<string>("");
+  const [line, setLine] = useState(0);
+  const dragDepth = useRef(0);
+  const busy = state === "thinking";
 
   useEffect(() => {
-    if (!loading) return;
-    const t = setInterval(() => {
-      setMsgIndex((i) => Math.min(i + 1, loadingMessages.length - 1));
-    }, 1200);
+    if (!busy) return;
+    setLine(0);
+    const t = setInterval(() => setLine((i) => Math.min(i + 1, THINKING_LINES.length - 1)), 1800);
     return () => clearInterval(t);
-  }, [loading]);
+  }, [busy]);
 
-  const handleFileUpload = async (file: File) => {
-    if (!file) return;
+  const handleFile = async (file: File) => {
+    if (!file || busy) return;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
-      toast.error("Please sign in to analyse a contract.");
+      toast.error("Sign in first so we can save your results.");
       navigate("/login");
       return;
     }
 
-    setLoading(true);
+    setFileName(file.name);
     setError(null);
+    setState("thinking");
 
     try {
       const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      if (!apiKey) throw new Error("OpenRouter API key not configured");
 
-      if (!apiKey) {
-        throw new Error("OpenRouter API key not configured");
+      const text = await extractTextFromFile(file);
+      if (!text.trim()) {
+        throw new Error("Couldn't find any text in that file. Is it a scan or a photo?");
       }
 
-      // Extract text from file (handles PDF, DOCX, TXT)
-      const fileContent = await extractTextFromFile(file);
-
-      // Validate extraction
-      if (!fileContent || fileContent.trim().length === 0) {
-        throw new Error(
-          "Could not extract text from this file. Please ensure the PDF contains readable text or try a different file format."
-        );
-      }
-
-      if (fileContent.length < 100) {
-        console.warn(
-          `⚠️ Warning: Extracted text is very short (${fileContent.length} chars). This might be a scan or image-based PDF.`
-        );
-      }
-
-      const userLocation =
+      const location =
         localStorage.getItem(`bys_user_location_${session.user.id}`) ??
         localStorage.getItem("bys_user_location") ??
         "United States";
+      const context: UserContext = { location };
 
-      const userContext: UserContext = {
-        location: userLocation,
-      };
+      const analysis = await analyzeContractWithContext(text, file.name, context, apiKey);
 
-      // Analyze with AI
-      const analysis = await analyzeContractWithContext(
-        fileContent,
-        file.name,
-        userContext,
-        apiKey
+      const saved = await saveContractResult(
+        {
+          fileName: file.name,
+          overallScore: analysis.overallScore,
+          clarity: analysis.clarity,
+          fairness: analysis.fairness,
+          riskLevel: analysis.riskLevel,
+          keyIssues: analysis.problems.map(encodeProblem),
+          simpleExplanation: analysis.vibeCheck,
+          documentType: analysis.documentType,
+          userLocation: location,
+          contractText: text,
+        },
+        session.user.id
       );
 
-      // Save to Supabase
-      const savedResult = await saveContractResult({
-        fileName: file.name,
-        overallScore: analysis.overallScore,
-        clarity: analysis.clarity,
-        fairness: analysis.fairness,
-        riskLevel: analysis.riskLevel,
-        keyIssues: analysis.keyIssues,
-        simpleExplanation: analysis.simpleExplanation,
-        userLocation,
-        contractText: fileContent,
-      }, session.user.id);
-
-      // Navigate to result with the real UUID
-      navigate(`/result/${savedResult.id}`);
+      // ?talk=1 tells the result page to start speaking right away
+      navigate(`/result/${saved.id}?talk=1`);
     } catch (err) {
-      console.error("Failed to analyze contract:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to analyze contract. Please try again."
-      );
-      setLoading(false);
+      console.error("Failed to analyze document:", err);
+      setError(err instanceof Error ? err.message : "Something broke, try again.");
+      setState("idle");
     }
   };
 
-  const startUpload = () => {
-    if (inputRef.current?.files?.[0]) {
-      handleFileUpload(inputRef.current.files[0]);
-    }
-  };
+  const pick = () => !busy && inputRef.current?.click();
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 md:px-6 py-12 md:py-16">
-      <div className="w-full max-w-2xl animate-fade-up">
-        {!loading ? (
-          <>
-            <div className="text-center mb-8 md:mb-12">
-              <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mb-4">
-                Drop your contract here
-              </h1>
-              <p className="text-muted-foreground text-base md:text-lg">
-                Let's see what's actually going on in there.
-              </p>
-            </div>
+    <div
+      className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-12 md:py-16"
+      onDragEnter={(e) => {
+        e.preventDefault();
+        if (busy) return;
+        dragDepth.current++;
+        setState("dragging");
+      }}
+      onDragOver={(e) => e.preventDefault()}
+      onDragLeave={() => {
+        if (busy) return;
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setState("idle");
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        dragDepth.current = 0;
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleFile(file);
+        else setState("idle");
+      }}
+    >
+      <div className="w-full max-w-xl text-center animate-fade-up">
+        <p className="font-hand text-2xl text-primary mb-2 -rotate-2">
+          {busy ? "one sec bestie" : "feed me a doc 👇"}
+        </p>
+        <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mb-3">
+          {busy ? "Reading it rn…" : "Drop any document on me"}
+        </h1>
+        <p className="text-muted-foreground text-base md:text-lg mb-10 md:mb-12 max-w-md mx-auto">
+          {busy
+            ? THINKING_LINES[line]
+            : "Lease, job offer, NDA, terms, bills — I'll say the red flags out loud, then you can ask me anything about it."}
+        </p>
 
-            {error && (
-              <div className="bg-danger/10 border border-danger/30 rounded-2xl p-4 mb-8 text-danger text-sm">
-                {error}
-              </div>
-            )}
+        <button
+          type="button"
+          onClick={pick}
+          disabled={busy}
+          aria-label="Pick a document to analyze"
+          className="mx-auto block rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/50 disabled:cursor-progress cursor-pointer"
+        >
+          <TalkingOrb state={state} size={200} className="mx-auto md:scale-110" />
+        </button>
 
-            <label
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-              className={cn(
-                "block rounded-3xl border-2 border-dashed p-8 md:p-16 text-center cursor-pointer transition-smooth bg-card",
-                dragOver
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/40 hover:bg-card/80"
-              )}
-            >
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".pdf,.docx,.txt"
-                className="hidden"
-                onChange={() => startUpload()}
-              />
-              <div className="w-16 h-16 rounded-2xl bg-background grid place-items-center mx-auto mb-6">
-                <UploadCloud className="w-8 h-8 text-primary" />
-              </div>
-              <p className="text-xl font-semibold mb-2">Drag a file in</p>
-              <p className="text-muted-foreground mb-8">
-                PDF, DOCX, or TXT works — we'll handle the rest.
-              </p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={ACCEPTED_FILE_TYPES}
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            e.target.value = "";
+          }}
+        />
+
+        <div className="mt-12 md:mt-14 min-h-[88px]">
+          {busy ? (
+            <p className="text-sm text-muted-foreground font-mono truncate">{fileName}</p>
+          ) : (
+            <>
               <Button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  inputRef.current?.click();
-                }}
+                onClick={pick}
                 size="lg"
-                className="h-12 rounded-2xl bg-primary hover:bg-primary/90 hover:brightness-110 text-primary-foreground font-medium px-6 shadow-glow transition-smooth"
+                className="h-12 rounded-2xl px-6 font-medium shadow-glow"
               >
+                <Upload className="w-4 h-4" />
                 Pick a file
               </Button>
-            </label>
-          </>
-        ) : (
-          <div className="bg-card rounded-3xl p-8 md:p-16 border border-border shadow-elevated text-center animate-scale-in">
-            <div className="relative w-20 h-20 mx-auto mb-10">
-              <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping" />
-              <div className="relative w-20 h-20 rounded-2xl bg-primary grid place-items-center shadow-glow">
-                <FileText className="w-9 h-9 text-primary-foreground" />
-              </div>
-            </div>
-            <p
-              key={msgIndex}
-              className="text-2xl md:text-3xl font-medium animate-fade-in tracking-tight"
-            >
-              {loadingMessages[msgIndex]}
-            </p>
-            <p className="text-muted-foreground mt-4 text-lg">
-              Hang tight, almost done.
-            </p>
+              <p className="text-xs text-muted-foreground mt-3">
+                PDF · DOCX · TXT · RTF · HTML · Markdown · CSV
+              </p>
+              <ColorPicker className="mt-6" />
+            </>
+          )}
+        </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="mt-6 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-sm text-danger animate-fade-in"
+          >
+            {error}
           </div>
         )}
       </div>
-
-      {!loading && (
-        <div className="w-full max-w-2xl mx-auto mt-10 px-6">
-          <AdUnit />
-        </div>
-      )}
     </div>
   );
 };

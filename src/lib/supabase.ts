@@ -36,6 +36,40 @@ export interface StoredContractResult {
   contractText: string; // Store for reference
 }
 
+interface ContractResultRow {
+  id: string;
+  file_name: string;
+  overall_score: number;
+  clarity: number;
+  fairness: number;
+  risk_level: StoredContractResult["riskLevel"];
+  key_issues: string[] | null;
+  simple_explanation: string;
+  user_location: string;
+  document_type?: string;
+  main_concern?: string;
+  created_at: string;
+  contract_text: string;
+}
+
+function rowToResult(row: ContractResultRow): StoredContractResult {
+  return {
+    id: row.id,
+    fileName: row.file_name,
+    overallScore: row.overall_score,
+    clarity: row.clarity,
+    fairness: row.fairness,
+    riskLevel: row.risk_level,
+    keyIssues: row.key_issues ?? [],
+    simpleExplanation: row.simple_explanation,
+    userLocation: row.user_location,
+    documentType: row.document_type,
+    mainConcern: row.main_concern,
+    createdAt: row.created_at,
+    contractText: row.contract_text,
+  };
+}
+
 export async function saveContractResult(
   result: Omit<StoredContractResult, "id" | "createdAt">,
   userId?: string
@@ -79,21 +113,7 @@ export async function saveContractResult(
   }
 
   const row = data[0];
-  return {
-    id: row.id,
-    fileName: row.file_name,
-    overallScore: row.overall_score,
-    clarity: row.clarity,
-    fairness: row.fairness,
-    riskLevel: row.risk_level,
-    keyIssues: row.key_issues,
-    simpleExplanation: row.simple_explanation,
-    userLocation: row.user_location,
-    documentType: row.document_type,
-    mainConcern: row.main_concern,
-    createdAt: row.created_at,
-    contractText: row.contract_text,
-  };
+  return rowToResult(row);
 }
 
 export async function getContractResults(): Promise<StoredContractResult[]> {
@@ -109,21 +129,7 @@ export async function getContractResults(): Promise<StoredContractResult[]> {
     throw new Error(`Failed to fetch contract results: ${error.message}`);
   }
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    fileName: row.file_name,
-    overallScore: row.overall_score,
-    clarity: row.clarity,
-    fairness: row.fairness,
-    riskLevel: row.risk_level,
-    keyIssues: row.key_issues,
-    simpleExplanation: row.simple_explanation,
-    userLocation: row.user_location,
-    documentType: row.document_type,
-    mainConcern: row.main_concern,
-    createdAt: row.created_at,
-    contractText: row.contract_text,
-  }));
+  return (data || []).map(rowToResult);
 }
 
 export async function getContractResult(id: string): Promise<StoredContractResult | null> {
@@ -142,21 +148,7 @@ export async function getContractResult(id: string): Promise<StoredContractResul
 
   if (!data) return null;
 
-  return {
-    id: data.id,
-    fileName: data.file_name,
-    overallScore: data.overall_score,
-    clarity: data.clarity,
-    fairness: data.fairness,
-    riskLevel: data.risk_level,
-    keyIssues: data.key_issues,
-    simpleExplanation: data.simple_explanation,
-    userLocation: data.user_location,
-    documentType: data.document_type,
-    mainConcern: data.main_concern,
-    createdAt: data.created_at,
-    contractText: data.contract_text,
-  };
+  return rowToResult(data);
 }
 
 export async function deleteContractResult(id: string): Promise<void> {
