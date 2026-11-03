@@ -12,6 +12,7 @@ import { getContractResult, type StoredContractResult } from "@/lib/supabase";
 import { decodeProblem, SEVERITY_META, type Problem } from "@/lib/problems";
 import { askAboutDocument, MAX_QUESTION_CHARS, type ChatTurn } from "@/services/ai-lawyer";
 import { AdUnit } from "@/components/monetization/AdUnit";
+import { preloadHumanVoice, unlockAudio } from "@/lib/human-voice";
 import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
 const CELEBRATIONS = [
@@ -42,6 +43,11 @@ const Result = () => {
   const [draft, setDraft] = useState("");
   const historyRef = useRef<ChatTurn[]>([]);
 
+  useEffect(() => {
+    preloadHumanVoice();
+    window.scrollTo(0, 0);
+  }, []);
+
   // ─── Load ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!id) {
@@ -63,8 +69,8 @@ const Result = () => {
         setCaption({
           who: "orb",
           text: problems.length
-            ? `found ${problems.length} red flag${problems.length === 1 ? "" : "s"}. tap replay to hear them 👇`
-            : "no red flags found ✨ tap replay to hear the vibe check",
+            ? `found ${problems.length} thing${problems.length === 1 ? "" : "s"} to look at. tap replay to hear them`
+            : "nothing sketchy in here. tap replay to hear my take",
         });
         if (stored.overallScore >= 90) {
           const msg = CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)];
@@ -81,25 +87,36 @@ const Result = () => {
     };
   }, [id]);
 
-  // ─── Spoken script: intro → each problem → vibe check → invite questions ─
+  // ─── Spoken script: intro → each problem → overall take → invite questions ─
   const script = useMemo(() => {
     if (!data) return [];
     const n = data.problems.length;
+    const doc = data.documentType;
+    const pick = (options: string[]) => options[Math.floor(Math.random() * options.length)];
+    const count = n === 1 ? "one thing" : `${n} things`;
     const intro =
       n === 0
-        ? `okay I read your ${data.documentType}. honestly? no red flags.`
-        : `okay I read your ${data.documentType}. found ${n} ${n === 1 ? "thing" : "things"} you need to know.`;
+        ? pick([
+            `ok so I read your whole ${doc}. honestly, nothing sketchy in there.`,
+            `just went through your ${doc}. good news, I didn't find anything bad.`,
+          ])
+        : pick([
+            `ok so I read your whole ${doc}. there's ${count} you should know about.`,
+            `alright, went through your ${doc}. ${count} stood out.`,
+            `just read your ${doc}. heads up, there's ${count} I'd look at before signing.`,
+          ]);
     return [
       intro,
       ...data.problems.map((p) => p.comment),
       data.stored.simpleExplanation,
-      "got questions? tap the mic and ask me anything about it.",
+      pick(["anything you wanna ask? just tap the mic.", "got questions? tap the mic and ask me."]),
     ];
   }, [data]);
 
   const say = useCallback(
     (lines: string[], trackProblems = false) => {
       return speaker.speak(lines, {
+        waitForHumanMs: 15000,
         onLine: (i) => {
           if (trackProblems) setActiveLine(i);
           if (i >= 0) setCaption({ who: "orb", text: lines[i] });
@@ -111,6 +128,7 @@ const Result = () => {
 
   const playBreakdown = useCallback(() => {
     if (!script.length) return;
+    unlockAudio();
     if (!speaker.supported || speaker.muted) {
       setCaption({ who: "orb", text: script.slice(1, -1).join("  ") });
       return;
@@ -133,6 +151,7 @@ const Result = () => {
     async (raw: string) => {
       const q = raw.trim().slice(0, MAX_QUESTION_CHARS);
       if (!q || !data || asking) return;
+      unlockAudio();
       speaker.stop();
       setActiveLine(-1);
       setCaption({ who: "you", text: q, live: true });
@@ -175,6 +194,7 @@ const Result = () => {
   }, [listener.listening, listener.interim]);
 
   const toggleMic = () => {
+    unlockAudio();
     if (listener.listening) return listener.stop();
     speaker.stop();
     setActiveLine(-1);
@@ -183,7 +203,7 @@ const Result = () => {
 
   const orbState: OrbState = listener.listening
     ? "listening"
-    : asking
+    : asking || speaker.warming
       ? "thinking"
       : speaker.speaking
         ? "talking"
@@ -241,18 +261,26 @@ const Result = () => {
           <TalkingOrb state={orbState} energyRef={speaker.energyRef} size={260} className="scale-[0.8] md:scale-100 -my-6 md:my-0" />
 
           <TypeCaption caption={caption} className="mt-10 md:mt-12 min-h-[7.5rem] w-full max-w-lg px-2" />
-          {asking && <p className="text-sm text-muted-foreground -mt-4 mb-2 animate-pulse">thinking…</p>}
+          {(asking || speaker.warming) && (
+            <p className="text-sm text-muted-foreground -mt-4 mb-2 animate-pulse">
+              {asking
+                ? "thinking…"
+                : speaker.voiceStatus === "loading"
+                  ? `warming up my voice ${Math.round(speaker.voiceProgress * 100)}%…`
+                  : "one sec…"}
+            </p>
+          )}
 
           {/* Controls */}
           <div className="mt-6 flex items-center justify-center gap-5">
             <Button
               variant="secondary"
               size="icon"
-              onClick={speaker.speaking ? speaker.stop : playBreakdown}
+              onClick={speaker.speaking || speaker.warming ? speaker.stop : playBreakdown}
               className="rounded-full h-12 w-12"
-              aria-label={speaker.speaking ? "Stop talking" : "Replay the red flags"}
+              aria-label={speaker.speaking || speaker.warming ? "Stop talking" : "Replay the red flags"}
             >
-              {speaker.speaking ? <Square className="w-4 h-4" /> : <RotateCcw className="w-5 h-5" />}
+              {speaker.speaking || speaker.warming ? <Square className="w-4 h-4" /> : <RotateCcw className="w-5 h-5" />}
             </Button>
 
             {listener.supported ? (
@@ -351,7 +379,7 @@ const Result = () => {
             </ul>
 
             <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
-              <p className="font-hand text-xl text-primary leading-none mb-1.5">vibe check</p>
+              <p className="font-hand text-xl text-primary leading-none mb-1.5">my take</p>
               <p className="font-medium">{stored.simpleExplanation}</p>
             </div>
           </div>

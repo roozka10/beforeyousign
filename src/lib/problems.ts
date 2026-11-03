@@ -5,7 +5,7 @@
 export type Severity = "high" | "medium" | "low";
 
 export interface Problem {
-  /** TikTok-comment style callout, e.g. "bestie they can fire you for vibes 💀" */
+  /** Casual, human callout, e.g. "they can drop your pay with 2 weeks notice 😬" */
   comment: string;
   /** Short exact snippet from the document that the comment is about */
   quote?: string;
@@ -41,7 +41,7 @@ export function decodeProblem(raw: string): Problem {
 }
 
 export const SEVERITY_META: Record<Severity, { emoji: string; label: string }> = {
-  high: { emoji: "🚩", label: "big yikes" },
-  medium: { emoji: "👀", label: "kinda sus" },
-  low: { emoji: "🤏", label: "lil thing" },
+  high: { emoji: "🚩", label: "big deal" },
+  medium: { emoji: "👀", label: "watch out" },
+  low: { emoji: "🤏", label: "small thing" },
 };

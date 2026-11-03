@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { analyzeContractWithAI, askAboutDocument, getAILawyerPrompt, getFollowUpPrompt, normalizeAnalysis } from "./ai-lawyer";
+import { analyzeContractWithAI, askAboutDocument, getAILawyerPrompt, getFollowUpPrompt, humanize, normalizeAnalysis } from "./ai-lawyer";
 import { decodeProblem, encodeProblem } from "@/lib/problems";
 
 afterEach(() => {
@@ -129,11 +129,12 @@ describe("analyzeContractWithAI", () => {
   });
 });
 
-describe("Gen Z problems-only prompt", () => {
-  it("asks only for problems in TikTok-comment style", () => {
+describe("problems-only prompt", () => {
+  it("asks only for problems, written like a real person texting", () => {
     const prompt = getAILawyerPrompt({ location: "Canada" });
-    expect(prompt).toContain("ONLY job: find the PROBLEMS");
-    expect(prompt).toContain("TikTok comment");
+    expect(prompt).toContain("YOUR ONLY JOB: point out the problems");
+    expect(prompt).toContain("Sound like a real person texting");
+    expect(prompt).toContain("NEVER use: bestie");
     expect(prompt).toContain("Canada");
   });
 
@@ -168,7 +169,7 @@ describe("follow-up questions", () => {
   it("locks answers to the document", () => {
     const prompt = getFollowUpPrompt("Rent is $900.", analysis);
     expect(prompt).toContain("Only answer questions about THIS document");
-    expect(prompt).toContain("that's not in your doc bestie");
+    expect(prompt).toContain("I can only help with your lease");
     expect(prompt).toContain("Rent is $900.");
     expect(prompt).toContain("1. deposit trap");
   });
@@ -190,6 +191,8 @@ describe("toSpeakable", () => {
     const { toSpeakable } = await import("@/hooks/use-voice");
     expect(toSpeakable("they keep ur deposit fr 💀🚩")).toBe("they keep ur deposit for real");
     expect(toSpeakable("ngl 🫡 idk")).toBe("not gonna lie I don't know");
+    expect(toSpeakable("that's like $14k")).toBe("that's like 14 thousand dollars");
+    expect(toSpeakable("$89/yr and $4.99/mo, 40 hrs")).toBe("89 dollars a year and 4.99 dollars a month, 40 hours");
   });
 });
 
@@ -200,5 +203,23 @@ describe("pickVoice", () => {
     expect(pickVoice([v("Samantha"), v("Google US English"), v("Google UK English Male", "en-GB")])?.name).toBe("Google UK English Male");
     expect(pickVoice([v("Samantha"), v("Daniel", "en-GB"), v("Thomas", "fr-FR")])?.name).toBe("Daniel");
     expect(pickVoice([v("Microsoft Aria Online (Natural)"), v("Microsoft Andrew Online (Natural)")])?.name).toBe("Microsoft Andrew Online (Natural)");
+  });
+});
+
+describe("humanize", () => {
+  it("removes AI tells", () => {
+    expect(humanize("Bestie, they keep your deposit — no cap 💀")).toBe("they keep your deposit 💀");
+    expect(humanize("late fee is $75 – even one day late")).toBe("late fee is $75, even one day late");
+  });
+});
+
+describe("smoothEdges", () => {
+  it("fades clip edges to zero so playback doesn't click", async () => {
+    const { smoothEdges } = await import("@/lib/human-voice");
+    const a = new Float32Array(1000).fill(0.5);
+    smoothEdges(a, 24000, 12);
+    expect(a[0]).toBe(0);
+    expect(a[999]).toBe(0);
+    expect(a[500]).toBe(0.5);
   });
 });

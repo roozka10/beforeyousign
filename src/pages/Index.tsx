@@ -12,6 +12,7 @@ import { AlertTriangle, Sparkles, ArrowRight, Volume2 } from "lucide-react";
 import { TalkingOrb } from "@/components/TalkingOrb";
 import { ColorPicker } from "@/components/ColorPicker";
 import { useSpeaker } from "@/hooks/use-voice";
+import { preloadHumanVoice, unlockAudio } from "@/lib/human-voice";
 import { AdUnit } from "@/components/monetization/AdUnit";
 import { AffiliatePartners } from "@/components/monetization/AffiliatePartners";
 
@@ -24,14 +25,14 @@ const sections = [
 
 // Sample comments for the landing-page feed (illustrative, not real users' docs)
 const SAMPLE_COMMENTS = [
-  { doc: "apartment lease", flag: "🚩", text: "bestie they keep your whole deposit for \"normal wear\" — that's literally just living there 💀" },
-  { doc: "job offer", flag: "👀", text: "lowkey sus: \"other duties as assigned\" means they can make you do literally anything" },
-  { doc: "gym membership", flag: "🚩", text: "auto-renews every year and you can only cancel by mail. it's giving 2003" },
-  { doc: "freelance contract", flag: "🚩", text: "they own everything you make, even stuff you made before the gig. no cap, push back" },
-  { doc: "NDA", flag: "👀", text: "this NDA lasts forever. like, forever forever. ask for 2 years max" },
-  { doc: "app's terms", flag: "👀", text: "you can't sue them, only do private arbitration. translation: you lose your day in court" },
-  { doc: "phone plan", flag: "🤏", text: "$4.99 \"admin fee\" every month that's not in the ad price. small but the audacity" },
-  { doc: "internship offer", flag: "🚩", text: "unpaid, 40 hrs a week, and a non-compete?? that's three red flags in a trench coat" },
+  { doc: "apartment lease", flag: "🚩", text: "they can keep your deposit for \"normal wear and tear\". that's literally just living there 💀" },
+  { doc: "job offer", flag: "👀", text: "\"other duties as assigned\" means they can basically make you do anything" },
+  { doc: "gym membership", flag: "🚩", text: "auto-renews every year and you can only cancel by mailing a letter. who even does that" },
+  { doc: "freelance contract", flag: "🚩", text: "they'd own everything you make, even stuff from before the gig. push back on this one" },
+  { doc: "NDA", flag: "👀", text: "this NDA never ends. like ever. ask for 2 years instead" },
+  { doc: "app's terms", flag: "👀", text: "you can't take them to court, only private arbitration. way harder to win that way" },
+  { doc: "phone plan", flag: "🤏", text: "there's a $4.99 \"admin fee\" every month that wasn't in the ad. small but annoying" },
+  { doc: "internship offer", flag: "🚩", text: "unpaid, 40 hours a week, and a non-compete?? ngl I'd pass" },
 ];
 
 const STEPS = [
@@ -50,9 +51,9 @@ const STEPS = [
 ];
 
 const DEMO_LINES = [
-  "hey bestie, I'm the orb.",
-  "drop any document on me and I'll tell you only the red flags, no boring stuff.",
-  "then ask me anything about it. I got you.",
+  "hey, I'm the orb.",
+  "send me any document and I'll tell you what's sketchy in it. just the stuff that matters.",
+  "then you can ask me whatever you want about it."
 ];
 
 const Index = () => {
@@ -152,15 +153,23 @@ const Index = () => {
               <div className="flex flex-col items-center text-center">
                 <button
                   type="button"
-                  onClick={() => (speaker.speaking ? speaker.stop() : speaker.speak(DEMO_LINES))}
+                  onClick={() => {
+                    if (speaker.speaking || speaker.warming) return speaker.stop();
+                    unlockAudio();
+                    preloadHumanVoice();
+                    speaker.speak(DEMO_LINES, { waitForHumanMs: 20000 });
+                  }}
                   aria-label="Hear the orb talk"
                   className="rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/50"
                 >
-                  <TalkingOrb state={speaker.speaking ? "talking" : "idle"} energyRef={speaker.energyRef} size={180} />
+                  <TalkingOrb state={speaker.warming ? "thinking" : speaker.speaking ? "talking" : "idle"} energyRef={speaker.energyRef} size={180} />
                 </button>
                 <p className="font-hand text-2xl text-primary mt-6 -rotate-2">hi, I read the fine print 👋</p>
                 <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                  <Volume2 className="w-3.5 h-3.5" /> tap me — I talk, free in your browser
+                  <Volume2 className="w-3.5 h-3.5" />
+                  {speaker.warming
+                    ? `warming up my voice${speaker.voiceStatus === "loading" ? ` ${Math.round(speaker.voiceProgress * 100)}%` : ""}…`
+                    : "tap me — I talk, free in your browser"}
                 </p>
                 <ColorPicker className="mt-4" />
               </div>

@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import {
+  getAudioContext,
+  getVoiceState,
+  subscribeVoice,
+  synthesize,
+  waitForHumanVoice,
+} from "@/lib/human-voice";
 
 /**
  * Free voice, built into the browser (Web Speech API). No API key, no cost.
@@ -12,6 +19,16 @@ const EMOJI_RE = /\p{Extended_Pictographic}|[\u{1F1E6}-\u{1F1FF}]|\u200d|\uFE0F/
 export function toSpeakable(text: string): string {
   return text
     .replace(EMOJI_RE, "")
+    // Money and units, so "$14k/yr" sounds like a person saying it
+    .replace(/\$(\d[\d,]*(?:\.\d+)?)\s*k\b/gi, "$1 thousand dollars")
+    .replace(/\$(\d[\d,]*(?:\.\d+)?)\s*m\b/gi, "$1 million dollars")
+    .replace(/\$(\d[\d,]*(?:\.\d+)?)/g, "$1 dollars")
+    .replace(/\s*\/\s*(yr|year)\b/gi, " a year")
+    .replace(/\s*\/\s*(mo|month)\b/gi, " a month")
+    .replace(/\s*\/\s*(wk|week)\b/gi, " a week")
+    .replace(/\s*\/\s*(hr|hour)\b/gi, " an hour")
+    .replace(/\bhrs\b/gi, "hours")
+    .replace(/\bw\/\s?/gi, "with ")
     .replace(/\bfr\b/gi, "for real")
     .replace(/\bngl\b/gi, "not gonna lie")
     .replace(/\bidk\b/gi, "I don't know")
@@ -45,19 +62,28 @@ export function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice 
 export interface SpeakOptions {
   /** Called when line i starts being spoken (-1 when finished or stopped). */
   onLine?: (index: number) => void;
+  /** If the human voice is still downloading, wait up to this long before falling back. */
+  waitForHumanMs?: number;
 }
 
 export function useSpeaker() {
-  const supported = typeof window !== "undefined" && "speechSynthesis" in window;
+  const browserVoice = typeof window !== "undefined" && "speechSynthesis" in window;
+  const [voiceState, setVoiceState] = useState(getVoiceState);
+  const supported = browserVoice || voiceState.status === "ready";
   const [speaking, setSpeaking] = useState(false);
+  /** True between asking to speak and the first sound (e.g. voice still loading). */
+  const [warming, setWarming] = useState(false);
   const [muted, setMuted] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice>();
   const runIdRef = useRef(0);
-  /** 0..1, bumped on every spoken word. The orb reads this every frame. */
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  /** 0..1 loudness of what's being said right now. The orb reads this every frame. */
   const energyRef = useRef(0);
 
+  useEffect(() => subscribeVoice(setVoiceState), []);
+
   useEffect(() => {
-    if (!supported) return;
+    if (!browserVoice) return;
     const load = () => {
       voiceRef.current = pickVoice(window.speechSynthesis.getVoices());
     };
@@ -67,41 +93,96 @@ export function useSpeaker() {
       window.speechSynthesis.removeEventListener("voiceschanged", load);
       window.speechSynthesis.cancel();
     };
-  }, [supported]);
+  }, [browserVoice]);
+
+  const stopAudio = useCallback(() => {
+    if (browserVoice) window.speechSynthesis.cancel();
+    try {
+      sourceRef.current?.stop();
+    } catch {
+      /* already stopped */
+    }
+    sourceRef.current = null;
+  }, [browserVoice]);
 
   const stop = useCallback(() => {
     runIdRef.current++;
-    if (supported) window.speechSynthesis.cancel();
+    stopAudio();
     setSpeaking(false);
+    setWarming(false);
     energyRef.current = 0;
-  }, [supported]);
+  }, [stopAudio]);
 
-  const speak = useCallback(
-    (lines: string[], { onLine }: SpeakOptions = {}): Promise<void> => {
-      if (!supported || muted) {
-        onLine?.(-1);
-        return Promise.resolve();
+  useEffect(() => stop, [stop]);
+
+  /** Human voice: generate every line in the worker, play them back-to-back. */
+  const speakHuman = useCallback(
+    async (lines: string[], runId: number, onLine?: (i: number) => void): Promise<boolean> => {
+      const ac = getAudioContext();
+      if (ac.state !== "running") {
+        await Promise.race([ac.resume().catch(() => {}), new Promise((r) => setTimeout(r, 300))]);
+        if ((ac.state as AudioContextState) !== "running") return false; // browser blocked audio — use the fallback
       }
-      window.speechSynthesis.cancel();
-      const runId = ++runIdRef.current;
-      setSpeaking(true);
 
-      return new Promise((resolve) => {
-        const finish = () => {
-          if (runId === runIdRef.current) {
-            setSpeaking(false);
-            energyRef.current = 0;
-          }
-          onLine?.(-1);
-          resolve();
-        };
+      const texts = lines.map(toSpeakable);
+      // Queue all lines now; the worker renders them in order while earlier ones play.
+      const buffers = texts.map((t) => (t ? synthesize(t).catch(() => null) : Promise.resolve(null)));
 
+      const analyser = ac.createAnalyser();
+      analyser.fftSize = 512;
+      const out = ac.createGain();
+      out.gain.value = 0.9; // a little headroom so loud syllables never clip
+      analyser.connect(out);
+      out.connect(ac.destination);
+      const samples = new Float32Array(analyser.fftSize);
+      let raf = 0;
+      const meter = () => {
+        analyser.getFloatTimeDomainData(samples);
+        let sum = 0;
+        for (let k = 0; k < samples.length; k++) sum += samples[k] * samples[k];
+        const rms = Math.sqrt(sum / samples.length);
+        energyRef.current = Math.min(1, rms * 7);
+        raf = requestAnimationFrame(meter);
+      };
+      raf = requestAnimationFrame(meter);
+
+      try {
+        for (let i = 0; i < lines.length; i++) {
+          const buffer = await buffers[i];
+          if (runId !== runIdRef.current) return true;
+          if (!buffer) continue;
+          const src = ac.createBufferSource();
+          src.buffer = buffer;
+          src.connect(analyser);
+          sourceRef.current = src;
+          onLine?.(i);
+          await new Promise<void>((resolve) => {
+            src.onended = () => resolve();
+            src.start();
+          });
+          if (runId !== runIdRef.current) return true;
+          // Tiny natural pause between thoughts
+          await new Promise((r) => setTimeout(r, 220));
+        }
+        return true;
+      } finally {
+        cancelAnimationFrame(raf);
+        analyser.disconnect();
+        out.disconnect();
+      }
+    },
+    []
+  );
+
+  /** Browser voice fallback (robotic, but always there). */
+  const speakBrowser = useCallback(
+    (lines: string[], runId: number, onLine?: (i: number) => void): Promise<void> =>
+      new Promise((resolve) => {
+        if (!browserVoice) return resolve();
         const playLine = (i: number) => {
-          if (runId !== runIdRef.current) return finish();
-          if (i >= lines.length) return finish();
+          if (runId !== runIdRef.current || i >= lines.length) return resolve();
           const text = toSpeakable(lines[i]);
           if (!text) return playLine(i + 1);
-
           const u = new SpeechSynthesisUtterance(text);
           if (voiceRef.current) u.voice = voiceRef.current;
           u.rate = 1.05;
@@ -117,11 +198,42 @@ export function useSpeaker() {
           u.onerror = () => playLine(i + 1);
           window.speechSynthesis.speak(u);
         };
-
         playLine(0);
-      });
+      }),
+    [browserVoice]
+  );
+
+  const speak = useCallback(
+    async (lines: string[], { onLine, waitForHumanMs = 0 }: SpeakOptions = {}): Promise<void> => {
+      stopAudio();
+      const runId = ++runIdRef.current;
+      if (muted || !lines.length) {
+        onLine?.(-1);
+        return;
+      }
+      setWarming(true);
+      const lineStarted = (i: number) => {
+        if (runId !== runIdRef.current) return;
+        setWarming(false);
+        setSpeaking(true);
+        onLine?.(i);
+      };
+      try {
+        const human = await waitForHumanVoice(waitForHumanMs);
+        if (runId !== runIdRef.current) return;
+        const done = human && (await speakHuman(lines, runId, lineStarted));
+        if (!done && runId === runIdRef.current) await speakBrowser(lines, runId, lineStarted);
+      } finally {
+        if (runId === runIdRef.current) {
+          setWarming(false);
+          setSpeaking(false);
+          energyRef.current = 0;
+          sourceRef.current = null;
+        }
+        onLine?.(-1);
+      }
     },
-    [supported, muted]
+    [muted, speakBrowser, speakHuman, stopAudio]
   );
 
   const toggleMute = useCallback(() => {
@@ -131,7 +243,19 @@ export function useSpeaker() {
     });
   }, [stop]);
 
-  return { supported, speaking, muted, toggleMute, speak, stop, energyRef };
+  return {
+    supported,
+    speaking,
+    warming,
+    muted,
+    toggleMute,
+    speak,
+    stop,
+    energyRef,
+    /** Human voice download state, for a small "getting ready" hint. */
+    voiceStatus: voiceState.status,
+    voiceProgress: voiceState.progress,
+  };
 }
 
 // ─── Speech recognition (mic → text) ─────────────────────────────────────────

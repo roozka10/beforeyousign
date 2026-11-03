@@ -10,6 +10,7 @@ import { saveContractResult, supabase } from "@/lib/supabase";
 import { ACCEPTED_FILE_TYPES, extractTextFromFile } from "@/lib/pdf-extractor";
 import { encodeProblem } from "@/lib/problems";
 import type { UserContext } from "@/services/ai-lawyer";
+import { preloadHumanVoice, unlockAudio } from "@/lib/human-voice";
 
 const THINKING_LINES = [
   "reading every single line so you don't have to…",
@@ -28,6 +29,11 @@ const UploadPage = () => {
   const dragDepth = useRef(0);
   const busy = state === "thinking";
 
+  // Download the human voice while they pick a file, so it's ready for the results.
+  useEffect(() => {
+    preloadHumanVoice();
+  }, []);
+
   useEffect(() => {
     if (!busy) return;
     setLine(0);
@@ -37,6 +43,7 @@ const UploadPage = () => {
 
   const handleFile = async (file: File) => {
     if (!file || busy) return;
+    unlockAudio(); // this click/drop lets the results page talk right away
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -118,7 +125,7 @@ const UploadPage = () => {
     >
       <div className="w-full max-w-xl text-center animate-fade-up">
         <p className="font-hand text-2xl text-primary mb-2 -rotate-2">
-          {busy ? "one sec bestie" : "feed me a doc 👇"}
+          {busy ? "one sec" : "feed me a doc 👇"}
         </p>
         <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mb-3">
           {busy ? "Reading it rn…" : "Drop any document on me"}
