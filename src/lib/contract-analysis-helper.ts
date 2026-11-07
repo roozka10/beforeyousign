@@ -1,45 +1,16 @@
-import { analyzeContractWithAI, UserContext, ContractAnalysis } from "@/services/ai-lawyer";
-
-const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
+import { analyzeContractWithAI, type UserContext, type ContractAnalysis } from "@/services/ai-lawyer";
 
 export async function analyzeContractWithContext(
   contractText: string,
   fileName: string,
-  userContext: UserContext | null,
-  apiKey: string
+  userContext: UserContext | null
 ): Promise<ContractAnalysis> {
   if (!contractText || contractText.trim().length === 0) {
-    throw new Error("That file looks empty — try a different one.");
+    throw new Error("That file looks empty, try a different one.");
   }
-
-  if (!apiKey) {
-    throw new Error("API key is not configured. Please set VITE_OPENROUTER_API_KEY");
+  const analysis = await analyzeContractWithAI(contractText, fileName, userContext ?? undefined);
+  if (!analysis || typeof analysis.overallScore !== "number" || !analysis.riskLevel) {
+    throw new Error("AI returned invalid response. Please try again.");
   }
-
-  try {
-    const context: UserContext | undefined = userContext ?? undefined;
-
-    // Call AI with user context
-    const analysis = await analyzeContractWithAI(
-      contractText,
-      fileName,
-      apiKey,
-      context,
-      DEFAULT_MODEL
-    );
-
-    // Validate response
-    if (
-      !analysis ||
-      typeof analysis.overallScore !== "number" ||
-      !analysis.riskLevel
-    ) {
-      throw new Error("AI returned invalid response. Please try again.");
-    }
-
-    return analysis;
-  } catch (error) {
-    console.error("Analysis error:", error);
-    throw error;
-  }
+  return analysis;
 }

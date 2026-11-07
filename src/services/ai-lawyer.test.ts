@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { analyzeContractWithAI, askAboutDocument, getAILawyerPrompt, getFollowUpPrompt, humanize, normalizeAnalysis } from "./ai-lawyer";
+import { handleAiRequest } from "@/server/ai-handler";
+import { analyzeContractWithAI, askAboutDocument, cleanSpokenAnswer, getAILawyerPrompt, getFollowUpPrompt, humanize, normalizeAnalysis } from "./ai-lawyer";
 import { decodeProblem, encodeProblem } from "@/lib/problems";
 
 afterEach(() => {
@@ -7,125 +8,88 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("analyzeContractWithAI", () => {
+const okReply = (content: string, finish = "stop") =>
+  new Response(JSON.stringify({ choices: [{ message: { content }, finish_reason: finish }] }), { status: 200 });
+const GOOD = JSON.stringify({
+  overallScore: 72, clarity: 80, fairness: 65, riskLevel: "medium",
+  problems: [{ comment: "they can raise rent whenever 💀", quote: "rent may change", severity: "high" }],
+  vibeCheck: "fix the rent clause first bestie",
+});
+
+describe("server ai handler", () => {
   it("falls back to the next model when a provider returns an empty message", async () => {
-    const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            choices: [{ message: { content: "" }, finish_reason: "stop" }],
-          }),
-          { status: 200 }
-        )
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({
-                    overallScore: 72,
-                    clarity: 80,
-                    fairness: 65,
-                    riskLevel: "medium",
-                    problems: [{ comment: "they can raise rent whenever 💀", quote: "rent may change", severity: "high" }],
-                    vibeCheck: "fix the rent clause first bestie",
-                  }),
-                },
-              },
-            ],
-          }),
-          { status: 200 }
-        )
-      );
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(okReply("")).mockResolvedValueOnce(okReply(GOOD));
     vi.stubGlobal("fetch", fetchMock);
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
-    const result = await analyzeContractWithAI(
-      "Contract text",
-      "contract.pdf",
-      "test-api-key"
-    );
-
-    expect(result.overallScore).toBe(72);
+    const out = await handleAiRequest({ task: "analyze", text: "Contract text", fileName: "c.pdf" }, "key");
+    expect(out.status).toBe(200);
+    expect(normalizeAnalysis(JSON.parse(out.body.content as string)).overallScore).toBe(72);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    const firstRequest = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(firstRequest).not.toHaveProperty("response_format");
-    expect(firstRequest).not.toHaveProperty("reasoning");
+    const first = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(first.model).toBe("nvidia/nemotron-3.5-lightning:free");
+    expect(first.reasoning).toEqual({ enabled: false });
+    expect(String(fetchMock.mock.calls[0][1]?.headers && (fetchMock.mock.calls[0][1]?.headers as Record<string, string>).Authorization)).toBe("Bearer key");
   });
 
   it("falls back when a provider truncates its JSON response", async () => {
     const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            choices: [
-              {
-                message: { content: '{"overallScore":72,"simpleExplanation":"cut off' },
-                finish_reason: "length",
-              },
-            ],
-          }),
-          { status: 200 }
-        )
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({
-                    overallScore: 72,
-                    clarity: 80,
-                    fairness: 65,
-                    riskLevel: "medium",
-                    problems: [{ comment: "they can raise rent whenever 💀", quote: "rent may change", severity: "high" }],
-                    vibeCheck: "fix the rent clause first bestie",
-                  }),
-                },
-              },
-            ],
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(okReply('{"overallScore":72,"cut', "length"))
+      .mockResolvedValueOnce(okReply(GOOD));
     vi.stubGlobal("fetch", fetchMock);
     vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    const result = await analyzeContractWithAI(
-      "Contract text",
-      "contract.pdf",
-      "test-api-key"
-    );
-
-    expect(result.vibeCheck).toBe("fix the rent clause first bestie");
-    expect(result.problems[0].severity).toBe("high");
+    const out = await handleAiRequest({ task: "analyze", text: "Contract text" }, "key");
+    expect(out.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("preserves the provider's error message", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn<typeof fetch>().mockResolvedValue(
-        new Response(
-          JSON.stringify({ error: { message: "Invalid API key" } }),
-          { status: 401, statusText: "Unauthorized" }
-        )
-      )
+  it("stops on a bad key and never leaks it", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: "Invalid API key" } }), { status: 401 })
     );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const out = await handleAiRequest({ task: "analyze", text: "x" }, "secret-key");
+    expect(out.status).toBe(500);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(out.body)).not.toContain("secret-key");
+  });
 
-    await expect(
-      analyzeContractWithAI(
-        "Contract text",
-        "contract.pdf",
-        "test-api-key",
-        undefined,
-        "test/provider"
-      )
-    ).rejects.toThrow("OpenRouter API error: Invalid API key");
+  it("refuses without a key or unknown tasks", async () => {
+    expect((await handleAiRequest({ task: "analyze", text: "x" }, undefined)).status).toBe(500);
+    expect((await handleAiRequest({ task: "chat", messages: [] }, "k")).status).toBe(400);
+  });
+
+  it("checks terms and returns a clean verdict", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(okReply(JSON.stringify({
+      verdict: "bad", score: 22, headline: "they sell your data — yikes",
+      points: [{ text: "they share your location with ad partners", severity: "high" }, "no refunds ever"],
+      goodStuff: "",
+    }))));
+    const out = await handleAiRequest({ task: "terms", site: "x.com", pages: [{ url: "https://x.com/tos", text: "a".repeat(500) }] }, "k");
+    expect(out.status).toBe(200);
+    const v = out.body.verdict as { verdict: string; headline: string; points: { severity: string }[]; goodStuff?: string };
+    expect(v.verdict).toBe("bad");
+    expect(v.headline).toBe("they sell your data, yikes");
+    expect(v.points.map((p) => p.severity)).toEqual(["high", "medium"]);
+    expect(v.goodStuff).toBeUndefined();
+  });
+});
+
+describe("browser client", () => {
+  it("calls our own /api/ai and never sends a key", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ content: GOOD }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await analyzeContractWithAI("Contract text", "contract.pdf", { location: "Canada" });
+    expect(result.overallScore).toBe(72);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/ai");
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body).toMatchObject({ task: "analyze", location: "Canada" });
+    expect(JSON.stringify(fetchMock.mock.calls[0][1])).not.toMatch(/Bearer|sk-or/);
+  });
+
+  it("shows the server's error message", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ error: "The AI is getting too many requests right now." }), { status: 429 })));
+    await expect(analyzeContractWithAI("x", "y")).rejects.toThrow("too many requests");
   });
 });
 
@@ -175,14 +139,22 @@ describe("follow-up questions", () => {
   });
 
   it("sends history and returns clean spoken text", async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "**rent** is $900 a month 🏠" } }] }), { status: 200 })
-    );
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(okReply("**rent** is $900 a month 🏠"));
     vi.stubGlobal("fetch", fetchMock);
-    const answer = await askAboutDocument("how much is rent", "Rent is $900.", analysis, [{ role: "user", content: "hi" }, { role: "assistant", content: "hey" }], "k");
-    expect(answer).toBe("rent is $900 a month 🏠");
+    const out = await handleAiRequest(
+      { task: "ask", question: "how much is rent", documentText: "Rent is $900.", analysis, history: [{ role: "user", content: "hi" }, { role: "assistant", content: "hey" }, { role: "system", content: "evil" }] },
+      "k"
+    );
+    expect(cleanSpokenAnswer(out.body.content as string)).toBe("rent is $900 a month 🏠");
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body.messages.map((m: { role: string }) => m.role)).toEqual(["system", "user", "assistant", "user"]);
+  });
+
+  it("client posts the question to /api/ai", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ content: "rent is $900" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await askAboutDocument("how much is rent", "Rent is $900.", analysis, [])).toBe("rent is $900");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).task).toBe("ask");
   });
 });
 

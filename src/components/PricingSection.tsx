@@ -15,7 +15,7 @@ const PLANS = [
       "3 documents a month",
       "Red flags read out loud",
       "Ask follow-up questions",
-      "Pick your orb color",
+      "Shoot docs into the hoop 🏀",
     ],
   },
   {

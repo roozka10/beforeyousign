@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>beforeyousign</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <img src="icons/icon48.png" alt="" width="32" height="32" />
+    <div>
+      <h1>beforeyousign</h1>
+      <p class="sub">terms checker</p>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="orb" aria-hidden="true"><img src="icons/icon128.png" alt="" /></div>
+    <p class="hand">signing up somewhere? I'll read the fine print 👀</p>
+  </section>
+
+  <div id="site" class="site" hidden></div>
+
+  <button id="check" class="btn">Is this site bad or nah?</button>
+
+  <label class="toggle">
+    <input id="auto" type="checkbox" />
+    <span class="track"><span class="thumb"></span></span>
+    <span>Auto-check when I'm on a sign-up page</span>
+  </label>
+
+  <p class="foot">AI summary, not legal advice. Results are saved for a week so I don't re-read the same site.</p>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

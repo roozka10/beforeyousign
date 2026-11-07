@@ -35,7 +35,7 @@ const SAMPLE_COMMENTS = [
 const STEPS = [
   {
     title: "Drop any doc",
-    body: "Lease, job offer, NDA, terms, bills. PDF, Word, text — throw it on the orb.",
+    body: "Lease, job offer, NDA, terms, bills. PDF, Word, text. Drop it in and shoot it into the hoop 🏀",
   },
   {
     title: "It finds only the problems",
@@ -43,7 +43,7 @@ const STEPS = [
   },
   {
     title: "It tells you out loud",
-    body: "The orb says every red flag like a TikTok comment — then you ask it anything about your doc.",
+    body: "beforeyousign says every red flag out loud like a friend would, then you ask it anything about your doc.",
   },
 ];
 
@@ -113,7 +113,7 @@ const Index = () => {
                 <ul className="animate-feed space-y-3 pt-4">
                   {[...SAMPLE_COMMENTS, ...SAMPLE_COMMENTS].map((c, i) => (
                     <li key={i} aria-hidden={i >= SAMPLE_COMMENTS.length} className="flex gap-3 rounded-2xl bg-background/50 border border-border p-3.5 text-left">
-                      <div className="w-8 h-8 shrink-0 rounded-full orb-body" />
+                      <img src="/logo.png" alt="" aria-hidden className="w-8 h-8 shrink-0 object-contain" />
                       <div className="min-w-0">
                         <p className="text-xs text-muted-foreground mb-0.5">
                           <span className="font-semibold text-foreground">beforeyousign</span> · on {/^[aeiou]/i.test(c.doc) ? "an" : "a"} {c.doc}
@@ -319,7 +319,7 @@ const Index = () => {
               },
               {
                 q: "Does the voice cost money?",
-                a: "Nope. The orb uses the voice built into your browser, so it's free. Works best in Chrome, Safari, and Edge.",
+                a: "Nope. It uses a voice that runs right in your browser, so it's free. Works best in Chrome, Safari, and Edge.",
               },
               {
                 q: "Can I ask it questions?",

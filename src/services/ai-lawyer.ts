@@ -1,4 +1,4 @@
-import { normalizeSeverity, type Problem } from "@/lib/problems";
+import { normalizeSeverity, type Problem } from "../lib/problems";
 
 export interface ContractAnalysis {
   overallScore: number;
@@ -69,12 +69,19 @@ Rules:
 - vibeCheck: your honest overall take in one casual sentence, max 18 words, same texting style. Like "mostly fine, just get the deposit thing fixed before you sign" or "honestly I'd pass on this one".`;
 };
 
-const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
-const FALLBACK_MODEL = "nvidia/nemotron-3.5-lightning:free";
-const MODELS_TO_TRY = [DEFAULT_MODEL, FALLBACK_MODEL];
-const MAX_CONTRACT_CHARS = 24_000;
+/**
+ * Fast free models, tried in order. Lightning answers in under a second and is
+ * rarely rate-limited; the others only kick in when it's down.
+ * All calls go through /api/ai so the OpenRouter key never reaches the browser.
+ */
+export const AI_MODELS = [
+  "nvidia/nemotron-3.5-lightning:free",
+  "nvidia/nemotron-3.5-super-vl:free",
+  "google/gemma-4-26b-a4b-it:free",
+];
+export const MAX_CONTRACT_CHARS = 24_000;
 
-function extractMessageText(message: unknown): string {
+export function extractMessageText(message: unknown): string {
   if (!message || typeof message !== "object") return "";
   const msg = message as Record<string, unknown>;
   const chunks: string[] = [];
@@ -102,153 +109,65 @@ function extractMessageText(message: unknown): string {
   return chunks.join("\n").trim();
 }
 
-export async function analyzeContractWithAI(
-  contractText: string,
-  fileName: string,
-  openRouterApiKey: string,
-  context?: UserContext,
-  model: string = DEFAULT_MODEL
-): Promise<ContractAnalysis> {
-  if (!openRouterApiKey) {
-    throw new Error("OpenRouter API key not configured. Add VITE_OPENROUTER_API_KEY to your environment.");
-  }
+/** Pull the first JSON object out of a model reply (tolerates ```json fences). */
+export function parseJsonObject(content: string): Record<string, unknown> {
+  const clean = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  const match = clean.match(/\{[\s\S]*\}/);
+  return JSON.parse(match ? match[0] : clean) as Record<string, unknown>;
+}
 
-  const clippedContract =
-    contractText.length > MAX_CONTRACT_CHARS
-      ? `${contractText.slice(0, MAX_CONTRACT_CHARS)}\n\n[Document truncated for analysis]`
-      : contractText;
+export function clipDocument(text: string): string {
+  return text.length > MAX_CONTRACT_CHARS
+    ? `${text.slice(0, MAX_CONTRACT_CHARS)}\n\n[Document truncated for analysis]`
+    : text;
+}
 
-  const userMessage = `
+export function buildAnalyzeUserMessage(contractText: string, fileName: string): string {
+  return `
 DOCUMENT: ${fileName}
 
-${clippedContract}
+${clipDocument(contractText)}
 
 Find only the problems in this document. Respond ONLY with the JSON object.
 `;
-
-  // Try primary model first, fall back to fallback if it fails
-  const modelsToTry = model === DEFAULT_MODEL ? MODELS_TO_TRY : [model];
-
-  for (const [index, modelToUse] of modelsToTry.entries()) {
-    try {
-      return await callOpenRouter(modelToUse, context, userMessage, openRouterApiKey);
-    } catch (error) {
-      if (index === modelsToTry.length - 1) {
-        throw error;
-      }
-      console.warn(
-        `Model ${modelToUse} failed; trying ${modelsToTry[index + 1]} next.`,
-        error
-      );
-    }
-  }
-
-  throw new Error("All models failed");
 }
 
-async function callOpenRouter(
-  model: string,
-  context: UserContext | undefined,
-  userMessage: string,
-  openRouterApiKey: string
-): Promise<ContractAnalysis> {
-
+/** POST to our own server, which holds the API key. */
+export async function postAi<T = { content: string }>(payload: Record<string, unknown>): Promise<T> {
+  let response: Response;
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    response = await fetch("/api/ai", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openRouterApiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: getAILawyerPrompt(context),
-          },
-          {
-            role: "user",
-            content: userMessage,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 4000,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
+  } catch {
+    throw new Error("Couldn't reach the AI. Check your internet and try again.");
+  }
+  const data = (await response.json().catch(() => null)) as { error?: unknown } | null;
+  if (!response.ok) {
+    const message = data && typeof data.error === "string" ? data.error : `AI error (${response.status})`;
+    throw new Error(message);
+  }
+  return data as T;
+}
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => null);
-      const errorMessage =
-        error &&
-        typeof error === "object" &&
-        "error" in error &&
-        error.error &&
-        typeof error.error === "object" &&
-        "message" in error.error &&
-        typeof error.error.message === "string"
-          ? error.error.message
-          : null;
-      throw new Error(
-        errorMessage
-          ? `OpenRouter API error: ${errorMessage}`
-          : `OpenRouter API error: ${response.status} ${response.statusText}`
-      );
-    }
-
-    const data = await response.json();
-    const choice = Array.isArray(data.choices) ? data.choices[0] : undefined;
-    const content = extractMessageText(choice?.message);
-    const finishReason =
-      choice && typeof choice.finish_reason === "string"
-        ? choice.finish_reason
-        : "unknown";
-
-    if (!content) {
-      console.error("AI returned an empty message", { model, finishReason });
-      throw new Error(
-        finishReason === "length"
-          ? "AI response was cut off before it could finish. Please try again."
-          : "AI returned an empty response. The model may be temporarily unavailable; please try again."
-      );
-    }
-
-    if (finishReason === "length") {
-      throw new Error(
-        "AI response was cut off before it could finish. Please try again."
-      );
-    }
-
-    // Parse the JSON response
-    try {
-      // Clean up the response - remove markdown code blocks if present
-      const cleanContent = content
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-
-      // Try to extract JSON from response
-      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : cleanContent;
-
-      const analysis = JSON.parse(jsonStr) as Record<string, unknown>;
-
-      return normalizeAnalysis(analysis);
-    } catch (e) {
-      console.error("Raw response:", content);
-      console.error("Parse error:", e);
-
-      // If parsing fails, return a safe default
-      if (e instanceof SyntaxError) {
-        throw new Error(`Invalid JSON response from AI. Please try again. Error: ${e.message}`);
-      }
-      throw new Error(`Failed to parse AI response: ${e instanceof Error ? e.message : "Invalid format"}`);
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("Unknown error during contract analysis");
+export async function analyzeContractWithAI(
+  contractText: string,
+  fileName: string,
+  context?: UserContext
+): Promise<ContractAnalysis> {
+  const { content } = await postAi({
+    task: "analyze",
+    text: contractText.slice(0, MAX_CONTRACT_CHARS + 1000),
+    fileName,
+    location: context?.location,
+  });
+  try {
+    return normalizeAnalysis(parseJsonObject(content));
+  } catch (e) {
+    console.error("Raw response:", content, e);
+    throw new Error("The AI sent back something weird. Try again?");
   }
 }
 
@@ -321,7 +240,7 @@ export interface ChatTurn {
 }
 
 export const MAX_QUESTION_CHARS = 500;
-const MAX_HISTORY_TURNS = 8;
+export const MAX_HISTORY_TURNS = 8;
 
 export const getFollowUpPrompt = (
   documentText: string,
@@ -352,45 +271,32 @@ export async function askAboutDocument(
   question: string,
   documentText: string,
   analysis: Pick<ContractAnalysis, "documentType" | "problems" | "vibeCheck">,
-  history: ChatTurn[],
-  openRouterApiKey: string
+  history: ChatTurn[]
 ): Promise<string> {
   const q = question.trim().slice(0, MAX_QUESTION_CHARS);
   if (!q) throw new Error("Ask something first 👀");
-  if (!openRouterApiKey) {
-    throw new Error("OpenRouter API key not configured. Add VITE_OPENROUTER_API_KEY to your environment.");
-  }
 
-  const messages = [
-    { role: "system", content: getFollowUpPrompt(documentText, analysis) },
-    ...history.slice(-MAX_HISTORY_TURNS).map((t) => ({ role: t.role, content: t.content })),
-    { role: "user", content: q },
-  ];
+  const { content } = await postAi({
+    task: "ask",
+    question: q,
+    documentText: documentText.slice(0, MAX_CONTRACT_CHARS),
+    analysis: {
+      documentType: analysis.documentType,
+      vibeCheck: analysis.vibeCheck,
+      problems: analysis.problems.map((p) => ({ comment: p.comment, severity: p.severity })),
+    },
+    history: history.slice(-MAX_HISTORY_TURNS),
+  });
+  const answer = cleanSpokenAnswer(content);
+  if (!answer) throw new Error("AI returned an empty answer");
+  return answer;
+}
 
-  let lastError: unknown;
-  for (const model of MODELS_TO_TRY) {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openRouterApiKey}`,
-        },
-        body: JSON.stringify({ model, messages, temperature: 0.4, max_tokens: 400 }),
-      });
-      if (!response.ok) throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-      const data = await response.json();
-      const text = extractMessageText(data?.choices?.[0]?.message)
-        .replace(/```[\s\S]*?```/g, "")
-        .replace(/[*_#>`]/g, "")
-        .trim();
-      const answer = humanize(text);
-      if (!answer) throw new Error("AI returned an empty answer");
-      return answer;
-    } catch (error) {
-      lastError = error;
-      console.warn(`Follow-up with ${model} failed`, error);
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error("Couldn't get an answer, try again");
+export function cleanSpokenAnswer(text: string): string {
+  return humanize(
+    text
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/[*_#>`]/g, "")
+      .trim()
+  );
 }

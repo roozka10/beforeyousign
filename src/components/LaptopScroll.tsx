@@ -149,7 +149,7 @@ export const LaptopScroll = () => {
       : "Sound off";
 
   return (
-    <section ref={sectionRef} className="relative h-[300vh]" aria-label="Hero: a laptop opens and the orb reads a lease">
+    <section ref={sectionRef} className="relative h-[300vh]" aria-label="Hero: a laptop opens and beforeyousign reads a lease">
       <div className="sticky top-0 h-[100dvh] overflow-hidden flex flex-col items-center px-4">
         <div ref={glowRef} className="absolute top-1/3 w-[80vw] h-[55vh] rounded-full blur-3xl bg-primary/20 pointer-events-none" />
 
@@ -159,7 +159,7 @@ export const LaptopScroll = () => {
             Find what could <span className="font-serif italic text-primary">screw you</span> in the fine print
           </h1>
           <p className="text-base md:text-lg text-muted-foreground mt-4 md:mt-5 max-w-xl mx-auto">
-            Drop any document. A talking orb reads it and tells you <span className="marker">only the problems</span>, out loud.
+            Drop any document. beforeyousign reads it and tells you <span className="marker">only the problems</span>, out loud.
           </p>
           <div className="flex items-center justify-center gap-3 mt-6 md:mt-7">
             <Link to="/login">
@@ -241,7 +241,7 @@ export const LaptopScroll = () => {
                   boxShadow: "0 0 0 1px #5d5d63 inset, 0 0 0 1px #1a1a1c",
                 }}
               >
-                <div className="w-[8%] aspect-square rounded-full orb-body opacity-80 shadow-[0_0_24px_rgba(255,255,255,0.08)]" />
+                <img src="/logo.png" alt="" aria-hidden className="w-[10%] aspect-square object-contain opacity-80" />
               </div>
             </div>
 

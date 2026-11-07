@@ -22,23 +22,21 @@ The AI analyzes contracts and provides:
 
 ### 2. Choose Your Model
 Using a current OpenRouter free model:
-- `google/gemma-4-26b-a4b-it:free` - Gemma 4 26B A4B (Free, fast MoE) ✅ **Selected**
-- Fallback: `nvidia/nemotron-3.5-lightning:free`
+- `nvidia/nemotron-3.5-lightning:free` ✅ **Selected** (fast, ~1-3s, reasoning turned off)
+- Fallbacks: `nvidia/nemotron-3.5-super-vl:free`, then `google/gemma-4-26b-a4b-it:free`
+- Set in `src/services/ai-lawyer.ts` → `AI_MODELS`
 
 ### 3. Set Environment Variables on Vercel
 Add these environment variables to your Vercel project settings:
 
 ```
-VITE_OPENROUTER_API_KEY=your_openrouter_api_key_here
-VITE_OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
-VITE_USER_LOCATION=United States
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
+(No `VITE_` prefix: the key stays on the server in `api/ai.ts` and never reaches the browser.)
 
-Or locally in `.env`:
+Or locally in `.env.local` (gitignored):
 ```
-VITE_OPENROUTER_API_KEY=your_api_key_here
-VITE_OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
-VITE_USER_LOCATION=United States
+OPENROUTER_API_KEY=your_api_key_here
 ```
 
 ### 4. Update the UploadPage Component
@@ -53,8 +51,6 @@ const handleAnalyzeContract = async (contractText: string, fileName: string) => 
       contractText,
       fileName,
       import.meta.env.VITE_USER_LOCATION || "United States",
-      import.meta.env.VITE_OPENROUTER_API_KEY,
-      import.meta.env.VITE_OPENROUTER_MODEL
     );
     
     // Save analysis to state/context

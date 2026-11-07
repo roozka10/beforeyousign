@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TalkingOrb, type OrbState } from "@/components/TalkingOrb";
 import { TypeCaption, type Caption } from "@/components/TypeCaption";
-import { ColorPicker } from "@/components/ColorPicker";
 import { useListener, useSpeaker } from "@/hooks/use-voice";
 import { getContractResult, type StoredContractResult } from "@/lib/supabase";
 import { decodeProblem, SEVERITY_META, type Problem } from "@/lib/problems";
@@ -159,8 +158,7 @@ const Result = () => {
           q,
           data.stored.contractText ?? "",
           { documentType: data.documentType, problems: data.problems, vibeCheck: data.stored.simpleExplanation },
-          historyRef.current,
-          import.meta.env.VITE_OPENROUTER_API_KEY
+          historyRef.current
         );
         historyRef.current = [...historyRef.current, { role: "user", content: q }, { role: "assistant", content: answer }];
         setCaption({ who: "orb", text: answer });
@@ -351,7 +349,6 @@ const Result = () => {
             </form>
           )}
 
-          <ColorPicker className="mt-8 scale-90" />
         </section>
 
         {/* ─── Read it instead ─── */}
@@ -392,7 +389,7 @@ const CommentRow = ({ problem, active }: { problem: Problem; active: boolean }) 
   const meta = SEVERITY_META[problem.severity];
   return (
     <li className={cn("flex gap-3 rounded-2xl p-3 -mx-3 transition-colors duration-300", active && "bg-primary/10")}>
-      <div className="w-9 h-9 shrink-0 rounded-full orb-body" aria-hidden />
+      <img src="/logo.png" alt="" aria-hidden className="w-9 h-9 shrink-0 object-contain" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-[13px] mb-0.5">
           <span className="font-semibold">beforeyousign</span>

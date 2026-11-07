@@ -61,8 +61,7 @@ Click **"Environment Variables"** and add these:
 ```
 VITE_SUPABASE_URL = your_supabase_url
 VITE_SUPABASE_ANON_KEY = your_supabase_anon_key
-VITE_OPENROUTER_API_KEY = your_openrouter_api_key
-VITE_OPENROUTER_MODEL = google/gemma-4-26b-a4b-it:free
+OPENROUTER_API_KEY = your_openrouter_api_key
 ```
 
 **Where to find these:**
@@ -145,7 +144,7 @@ CREATE POLICY "Enable delete access for all users" ON contract_results
 1. Go to https://openrouter.ai
 2. Sign up if needed
 3. Click your username → **API keys**
-4. Copy your key → `VITE_OPENROUTER_API_KEY`
+4. Copy your key → `OPENROUTER_API_KEY`
 
 ## Quick Command Reference
 
