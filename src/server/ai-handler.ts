@@ -15,14 +15,14 @@ import {
   normalizeAnalysis,
   parseJsonObject,
   type ChatTurn,
-} from "../services/ai-lawyer";
+} from "../services/ai-lawyer.js";
 import {
   MAX_TERMS_CHARS,
   buildTermsUserMessage,
   getTermsPrompt,
   normalizeTermsVerdict,
-} from "../services/terms-check";
-import { normalizeSeverity, type Problem } from "../lib/problems";
+} from "../services/terms-check.js";
+import { normalizeSeverity, type Problem } from "../lib/problems.js";
 
 export interface AiResult {
   status: number;
@@ -51,7 +51,7 @@ async function callOpenRouter(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://beforeyousign.vercel.app",
+      "HTTP-Referer": "https://www.beforeyousign.lol",
       "X-Title": "beforeyousign",
     },
     body: JSON.stringify({

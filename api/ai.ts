@@ -1,4 +1,4 @@
-import { handleAiRequest } from "../src/server/ai-handler";
+import { handleAiRequest } from "../src/server/ai-handler.js";
 
 // The OpenRouter key lives only here, as a Vercel env var (never VITE_*, never in the browser).
 export async function POST(request: Request): Promise<Response> {

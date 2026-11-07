@@ -1,4 +1,4 @@
-import { humanize } from "./ai-lawyer";
+import { humanize } from "./ai-lawyer.js";
 
 /** What the Chrome extension shows in its pop-up. */
 export interface TermsVerdict {

@@ -1,4 +1,4 @@
-import { normalizeSeverity, type Problem } from "../lib/problems";
+import { normalizeSeverity, type Problem } from "../lib/problems.js";
 
 export interface ContractAnalysis {
   overallScore: number;
